@@ -7,6 +7,7 @@ import { POPUP_PORT_NAME } from "@/types/messages";
 interface TimerConnection {
   timerState: TimerState;
   sendMessage: (message: PopupMessage) => void;
+  registerMessageHandler: (handler: (message: BackgroundMessage) => void) => () => void;
   isConnected: boolean;
 }
 
@@ -14,6 +15,14 @@ export function useTimerConnection(): TimerConnection {
   const [timerState, setTimerState] = useState<TimerState>(createInitialTimerState());
   const [isConnected, setIsConnected] = useState(false);
   const portRef = useRef<chrome.runtime.Port | null>(null);
+  const handlersRef = useRef<Set<(message: BackgroundMessage) => void>>(new Set());
+
+  const registerMessageHandler = useCallback((handler: (message: BackgroundMessage) => void) => {
+    handlersRef.current.add(handler);
+    return () => {
+      handlersRef.current.delete(handler);
+    };
+  }, []);
 
   useEffect(() => {
     const port = chrome.runtime.connect({ name: POPUP_PORT_NAME });
@@ -23,6 +32,10 @@ export function useTimerConnection(): TimerConnection {
     port.onMessage.addListener((message: BackgroundMessage) => {
       if (message.type === "STATE_UPDATE") {
         setTimerState(message.state);
+      }
+
+      for (const handler of handlersRef.current) {
+        handler(message);
       }
     });
 
@@ -43,5 +56,5 @@ export function useTimerConnection(): TimerConnection {
     portRef.current?.postMessage(message);
   }, []);
 
-  return { timerState, sendMessage, isConnected };
+  return { timerState, sendMessage, registerMessageHandler, isConnected };
 }

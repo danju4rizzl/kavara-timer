@@ -1,8 +1,10 @@
 import type { TimerSettings } from "@/types/settings";
 import type { MetricsClearInterval } from "@/types/settings";
+import type { PopupMessage } from "@/types/messages";
 import { DurationCard } from "./DurationCard";
 import { WorkIntervalStepper } from "./WorkIntervalStepper";
 import { VolumeControl } from "./VolumeControl";
+import { SoundSelector } from "./SoundSelector";
 import { cn } from "@/lib/utils";
 
 interface SettingsViewProps {
@@ -12,6 +14,7 @@ interface SettingsViewProps {
   onSave: () => void;
   onDiscard: () => void;
   onClearMetrics: () => void;
+  sendMessage: (message: PopupMessage) => void;
 }
 
 const METRICS_INTERVALS: { value: MetricsClearInterval; label: string }[] = [
@@ -28,6 +31,7 @@ export function SettingsView({
   onSave,
   onDiscard,
   onClearMetrics,
+  sendMessage,
 }: SettingsViewProps) {
   return (
     <div className="flex flex-col gap-5 py-3">
@@ -41,6 +45,12 @@ export function SettingsView({
       <VolumeControl
         volume={settings.alarmVolume}
         onChange={(volume) => onUpdate({ alarmVolume: volume })}
+      />
+
+      <SoundSelector
+        settings={settings}
+        onUpdate={onUpdate}
+        sendMessage={sendMessage}
       />
 
       {/* Auto-start toggle */}

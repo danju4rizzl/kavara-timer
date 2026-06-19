@@ -22,6 +22,7 @@
   },
   "permissions": [
     "storage",
+    "unlimitedStorage",
     "alarms",
     "notifications",
     "offscreen",

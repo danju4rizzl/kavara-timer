@@ -71,7 +71,13 @@ async function handlePhaseComplete(): Promise<void> {
   }
 
   showPhaseCompleteNotification(currentState.phase);
-  playAlarm(settings.alarmVolume, settings.customSoundDataUrl);
+  playAlarm(
+    settings.alarmVolume,
+    settings.alarmSoundType,
+    settings.customSoundDataUrl,
+    settings.externalAudioUrl,
+    settings.youtubeVideoId
+  );
 
   const nextPhase = determineNextPhase(currentState, settings);
   const totalSeconds = getDurationForPhase(nextPhase, settings);

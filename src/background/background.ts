@@ -21,6 +21,8 @@ import {
   clearFocusMetrics,
 } from "./storageService";
 
+import { playAlarm, stopAlarm } from "./offscreenManager";
+
 const ALARM_NAME = "focusflow-tick";
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -79,6 +81,20 @@ chrome.runtime.onConnect.addListener((port) => {
         port.postMessage({ type: "SETTINGS_UPDATE", settings });
         break;
       }
+
+      case "PREVIEW_ALARM":
+        await playAlarm(
+          message.volume,
+          message.alarmSoundType,
+          message.customSoundDataUrl,
+          message.externalAudioUrl,
+          message.youtubeVideoId
+        );
+        break;
+
+      case "STOP_ALARM":
+        await stopAlarm();
+        break;
 
       case "ADD_BLOCKED_SITES": {
         const existingSites = await getBlockedSites();

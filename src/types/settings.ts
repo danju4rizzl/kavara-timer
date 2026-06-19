@@ -1,4 +1,5 @@
 export type MetricsClearInterval = "daily" | "weekly" | "monthly" | "manual";
+export type AlarmSoundType = "default" | "local" | "url" | "youtube";
 
 export interface TimerSettings {
   pomodoroDuration: number;
@@ -9,7 +10,10 @@ export interface TimerSettings {
   autoStartNextPhase: boolean;
   autoDetectCategories: boolean;
   metricsClearInterval: MetricsClearInterval;
+  alarmSoundType: AlarmSoundType;
   customSoundDataUrl: string | null;
+  externalAudioUrl: string;
+  youtubeVideoId: string;
 }
 
 export const DEFAULT_SETTINGS: TimerSettings = {
@@ -21,5 +25,8 @@ export const DEFAULT_SETTINGS: TimerSettings = {
   autoStartNextPhase: true,
   autoDetectCategories: false,
   metricsClearInterval: "weekly",
+  alarmSoundType: "default",
   customSoundDataUrl: null,
+  externalAudioUrl: "",
+  youtubeVideoId: "",
 };

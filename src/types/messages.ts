@@ -1,5 +1,5 @@
 import type { TimerState } from "./timer";
-import type { TimerSettings } from "./settings";
+import type { TimerSettings, AlarmSoundType } from "./settings";
 import type { BlockedSite, FocusMetrics } from "./blocklist";
 
 /* Popup → Background requests */
@@ -16,7 +16,16 @@ export type PopupMessage =
   | { type: "GET_SETTINGS" }
   | { type: "GET_BLOCKED_SITES" }
   | { type: "GET_FOCUS_METRICS" }
-  | { type: "CLEAR_FOCUS_METRICS" };
+  | { type: "CLEAR_FOCUS_METRICS" }
+  | {
+      type: "PREVIEW_ALARM";
+      volume: number;
+      alarmSoundType: AlarmSoundType;
+      customSoundDataUrl: string | null;
+      externalAudioUrl: string;
+      youtubeVideoId: string;
+    }
+  | { type: "STOP_ALARM" };
 
 /* Background → Popup broadcasts */
 export type BackgroundMessage =
@@ -27,7 +36,14 @@ export type BackgroundMessage =
 
 /* Background → Offscreen messages */
 export type OffscreenMessage =
-  | { type: "PLAY_ALARM"; volume: number; customSoundDataUrl: string | null }
+  | {
+      type: "PLAY_ALARM";
+      volume: number;
+      alarmSoundType: AlarmSoundType;
+      customSoundDataUrl: string | null;
+      externalAudioUrl: string;
+      youtubeVideoId: string;
+    }
   | { type: "STOP_ALARM" };
 
 export const POPUP_PORT_NAME = "popup-port";

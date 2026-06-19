@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import type { BackgroundMessage } from "@/types/messages";
+import { useState } from "react";
 import { useTimerConnection } from "./hooks/useTimerConnection";
 import { useSettings } from "./hooks/useSettings";
 import { useBlocklist } from "./hooks/useBlocklist";
@@ -13,29 +12,7 @@ type ActiveView = "timer" | "blocklist" | "settings";
 
 export function App() {
   const [activeView, setActiveView] = useState<ActiveView>("timer");
-  const { timerState, sendMessage, isConnected } = useTimerConnection();
-  const messageHandlersRef = useRef<Set<(message: BackgroundMessage) => void>>(new Set());
-
-  const registerMessageHandler = useCallback(
-    (handler: (message: BackgroundMessage) => void) => {
-      messageHandlersRef.current.add(handler);
-    },
-    []
-  );
-
-  useEffect(() => {
-    if (!isConnected) return;
-
-    const port = chrome.runtime.connect({ name: "popup-settings-port" });
-
-    port.onMessage.addListener((message: BackgroundMessage) => {
-      for (const handler of messageHandlersRef.current) {
-        handler(message);
-      }
-    });
-
-    return () => port.disconnect();
-  }, [isConnected]);
+  const { timerState, sendMessage, registerMessageHandler } = useTimerConnection();
 
   const { draftSettings, isDirty, updateDraft, save, discard } = useSettings(
     sendMessage,
@@ -76,6 +53,7 @@ export function App() {
             onSave={save}
             onDiscard={discard}
             onClearMetrics={clearMetrics}
+            sendMessage={sendMessage}
           />
         )}
       </main>

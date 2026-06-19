@@ -43,8 +43,43 @@ function createAlarmTone(volume: number): void {
   }
 }
 
+let youtubeIframe: HTMLIFrameElement | null = null;
+
+function extractSpotifyTrackId(url: string): string | null {
+  const match = url.match(/spotify\.com\/track\/([a-zA-Z0-9]{22})/);
+  return match && match[1] ? match[1] : null;
+}
+
+async function fetchSpotifyPreviewUrl(trackId: string): Promise<string | null> {
+  try {
+    const url = `https://open.spotify.com/embed/track/${trackId}`;
+    const response = await fetch(url);
+    const html = await response.text();
+    const match = html.match(/"preview_url"\s*:\s*"(https:\/\/p\.scdn\.co\/mp3-preview\/[^"]+)"/);
+    if (match && match[1]) {
+      return match[1].replace(/\\/g, "");
+    }
+  } catch (err) {
+    console.error("Failed to fetch Spotify preview:", err);
+  }
+  return null;
+}
+
 async function playCustomSound(dataUrl: string, volume: number): Promise<void> {
   stopCurrentAlarm();
+
+  let targetUrl = dataUrl;
+
+  const spotifyTrackId = extractSpotifyTrackId(dataUrl);
+  if (spotifyTrackId) {
+    const previewUrl = await fetchSpotifyPreviewUrl(spotifyTrackId);
+    if (previewUrl) {
+      targetUrl = previewUrl;
+    } else {
+      createAlarmTone(volume);
+      return;
+    }
+  }
 
   audioContext = new AudioContext();
   const gainNode = audioContext.createGain();
@@ -52,7 +87,7 @@ async function playCustomSound(dataUrl: string, volume: number): Promise<void> {
   gainNode.connect(audioContext.destination);
 
   try {
-    const response = await fetch(dataUrl);
+    const response = await fetch(targetUrl);
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
@@ -65,7 +100,49 @@ async function playCustomSound(dataUrl: string, volume: number): Promise<void> {
   }
 }
 
+function playYoutubeAlarm(videoId: string, volume: number): void {
+  stopCurrentAlarm();
+
+  youtubeIframe = document.createElement("iframe");
+  youtubeIframe.id = "youtube-player";
+  youtubeIframe.width = "200";
+  youtubeIframe.height = "200";
+  youtubeIframe.style.position = "absolute";
+  youtubeIframe.style.width = "0px";
+  youtubeIframe.style.height = "0px";
+  youtubeIframe.style.border = "none";
+  youtubeIframe.style.pointerEvents = "none";
+  youtubeIframe.setAttribute("allow", "autoplay");
+  youtubeIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&controls=0`;
+  
+  document.body.appendChild(youtubeIframe);
+
+  youtubeIframe.addEventListener("load", () => {
+    setTimeout(() => {
+      if (youtubeIframe && youtubeIframe.contentWindow) {
+        youtubeIframe.contentWindow.postMessage(
+          JSON.stringify({ event: "command", func: "setVolume", args: [volume] }),
+          "*"
+        );
+        youtubeIframe.contentWindow.postMessage(
+          JSON.stringify({ event: "command", func: "playVideo", args: [] }),
+          "*"
+        );
+      }
+    }, 1000);
+  });
+}
+
 function stopCurrentAlarm(): void {
+  if (youtubeIframe) {
+    try {
+      youtubeIframe.remove();
+    } catch {
+      /* Already removed */
+    }
+    youtubeIframe = null;
+  }
+
   if (currentOscillator) {
     try {
       currentOscillator.stop();
@@ -84,8 +161,14 @@ function stopCurrentAlarm(): void {
 chrome.runtime.onMessage.addListener((message: OffscreenMessage) => {
   switch (message.type) {
     case "PLAY_ALARM":
-      if (message.customSoundDataUrl) {
+      if (message.alarmSoundType === "default") {
+        createAlarmTone(message.volume);
+      } else if (message.alarmSoundType === "local" && message.customSoundDataUrl) {
         playCustomSound(message.customSoundDataUrl, message.volume);
+      } else if (message.alarmSoundType === "url" && message.externalAudioUrl) {
+        playCustomSound(message.externalAudioUrl, message.volume);
+      } else if (message.alarmSoundType === "youtube" && message.youtubeVideoId) {
+        playYoutubeAlarm(message.youtubeVideoId, message.volume);
       } else {
         createAlarmTone(message.volume);
       }

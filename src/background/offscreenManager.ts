@@ -1,4 +1,5 @@
 import type { OffscreenMessage } from "@/types/messages";
+import type { TimerSettings } from "@/types/settings";
 
 let isCreatingOffscreenDocument = false;
 
@@ -24,13 +25,22 @@ async function ensureOffscreenDocument(): Promise<void> {
   }
 }
 
-export async function playAlarm(volume: number, customSoundDataUrl: string | null): Promise<void> {
+export async function playAlarm(
+  volume: number,
+  alarmSoundType: TimerSettings["alarmSoundType"],
+  customSoundDataUrl: string | null,
+  externalAudioUrl: string,
+  youtubeVideoId: string
+): Promise<void> {
   await ensureOffscreenDocument();
 
   const message: OffscreenMessage = {
     type: "PLAY_ALARM",
     volume,
+    alarmSoundType,
     customSoundDataUrl,
+    externalAudioUrl,
+    youtubeVideoId,
   };
 
   await chrome.runtime.sendMessage(message);

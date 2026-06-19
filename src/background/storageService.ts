@@ -22,12 +22,21 @@ export async function saveTimerState(state: TimerState): Promise<void> {
 }
 
 export async function getSettings(): Promise<TimerSettings> {
-  const result = await chrome.storage.sync.get(STORAGE_KEYS.SETTINGS);
-  return { ...DEFAULT_SETTINGS, ...(result[STORAGE_KEYS.SETTINGS] as Partial<TimerSettings>) };
+  const syncResult = await chrome.storage.sync.get(STORAGE_KEYS.SETTINGS);
+  const localResult = await chrome.storage.local.get("customSoundDataUrl");
+  return {
+    ...DEFAULT_SETTINGS,
+    ...(syncResult[STORAGE_KEYS.SETTINGS] as Partial<TimerSettings>),
+    customSoundDataUrl: (localResult.customSoundDataUrl as string | null) ?? null,
+  };
 }
 
 export async function saveSettings(settings: TimerSettings): Promise<void> {
-  await chrome.storage.sync.set({ [STORAGE_KEYS.SETTINGS]: settings });
+  const { customSoundDataUrl, ...syncSettings } = settings;
+  await Promise.all([
+    chrome.storage.sync.set({ [STORAGE_KEYS.SETTINGS]: syncSettings }),
+    chrome.storage.local.set({ customSoundDataUrl: customSoundDataUrl ?? null }),
+  ]);
 }
 
 export async function getBlockedSites(): Promise<BlockedSite[]> {
