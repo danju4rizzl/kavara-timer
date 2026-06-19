@@ -1,0 +1,184 @@
+{
+  "prd_metadata": {
+    "title": "Product Requirement Document (PRD) - Pomodoro Block (FocusFlow)",
+    "version": "1.0.0",
+    "target_release": "Q3 2026",
+    "status": "Approved",
+    "author": "Product Engineering Team",
+    "tech_stack": {
+      "frontend_framework": "ReactJS",
+      "language": "TypeScript",
+      "bundler": "Vite",
+      "styling": "Tailwind CSS",
+      "ui_components": "shadcn/ui"
+    }
+  },
+  "product_overview": {
+    "summary": "Pomodoro Block (FocusFlow) is a cross-platform browser extension designed to optimize time management and minimize online distractions by combining a robust Pomodoro timer with an un-bypassable site-blocking utility built on Manifest V3.",
+    "core_value_propositions": [
+      "Frictionless accessibility via system-level keyboard shortcuts.",
+      "High-performance, dark-mode-first glassmorphic user interface to mitigate cognitive load.",
+      "Unified, secure cross-browser codebase matching Web Store compliance metrics."
+    ]
+  },
+  "architecture_and_extension_topology": {
+    "manifest_version": 3,
+    "context_distribution": {
+      "background_service_worker": {
+        "file": "src/background/background.ts",
+        "responsibilities": [
+          "Maintain absolute persistent state of countdown timers.",
+          "Coordinate intervals and trigger state changes sequentially.",
+          "Dispatch native browser toast notifications.",
+          "Initialize offscreen documents for predictable sound alarm playback.",
+          "Enforce Declarative Net Request rules for real-time site interception."
+        ]
+      },
+      "popup_ui": {
+        "responsibilities": [
+          "Connect via long-lived runtime ports to stream timer state deltas.",
+          "Render ephemeral views without locking background thread resources.",
+          "Commit localized modifications back to memory storage layers."
+        ]
+      },
+      "storage_layer": {
+        "chrome_storage_local": "Used for volatile runtime tracking configurations and timer state loops.",
+        "chrome_storage_sync": "Used for persistent configuration profiles, blocklists, and device preference keys."
+      }
+    }
+  },
+  "functional_requirements": {
+    "core_timer_engine": [
+      {
+        "id": "FR-1.1",
+        "requirement": "State Persistence",
+        "description": "Timer countdown mechanisms must reside inside the background service worker. Closing or hiding the popup context window must not halt, desynchronize, or clear an active session sequence."
+      },
+      {
+        "id": "FR-1.2",
+        "requirement": "Interval Profiling",
+        "description": "System must manage three core cycle intervals: Pomodoro (Focus Time - Default 25 min), Short Break (Default 5 min), and Long Break (Default 15 min)."
+      },
+      {
+        "id": "FR-1.3",
+        "requirement": "Automated Flow Scheduling",
+        "description": "Track consecutive Focus blocks. Upon reaching the user-defined interval threshold (Default: 4 cycles), the engine must automatically transition to a Long Break."
+      },
+      {
+        "id": "FR-1.4",
+        "requirement": "Manual Controls",
+        "description": "Provide explicit user entry points within the UI layout to Play, Pause, Reset, and Skip forward past active intervals."
+      }
+    ],
+    "site_blocking_engine": [
+      {
+        "id": "FR-2.1",
+        "requirement": "Non-Bypassable Interception",
+        "description": "When a Pomodoro focus interval is running, network access to blacklisted domains must be instantly blocked or redirected to an internal sandbox splash file (blocked.html)."
+      },
+      {
+        "id": "FR-2.2",
+        "requirement": "Domain Matching Topology",
+        "description": "URL mapping must operate on global domain string matchers. Registering 'facebook.com' must implicitly capture subdomains (e.g., m.facebook.com) and granular paths."
+      },
+      {
+        "id": "FR-2.3",
+        "requirement": "State-Dependent Enforcement",
+        "description": "Site blocking mechanisms must be strictly active only during Pomodoro sessions, unlocking instantly during Break intervals."
+      },
+      {
+        "id": "FR-2.4",
+        "requirement": "Blocklist Configuration Layout",
+        "description": "Provide a clean multi-line textarea input module allowing simple insertions, list purges, categorizations, and metric analysis charts reporting focus time scores."
+      }
+    ],
+    "notifications_and_audio": [
+      {
+        "id": "FR-3.1",
+        "requirement": "Native Toast Dispatches",
+        "description": "Trigger system-level messages using 'chrome.notifications' immediately upon interval completion boundaries."
+      },
+      {
+        "id": "FR-3.2",
+        "requirement": "Offscreen Audio Sync",
+        "description": "Initialize a dedicated offscreen proxy layout file (offscreen.html) programmatically to support audio context manipulation within Manifest V3 rules."
+      },
+      {
+        "id": "FR-3.3",
+        "requirement": "Gain Regulation Control",
+        "description": "Integrate an adjustable inline slider component modulating audio volume across a linear scale from 0% (Muted) to 100%."
+      }
+    ],
+    "global_shortcuts": [
+      {
+        "id": "FR-4.1",
+        "requirement": "Action Invocations",
+        "description": "Bind a global operating system shortcut command array linking directly to popup invocation: Cmd+Shift+F on macOS and Ctrl+Shift+F on Windows and Linux configurations."
+      }
+    ]
+  },
+  "ui_ux_design_system": {
+    "theme_name": "Lumina Extension System",
+    "aesthetic": "Premium Glassmorphic Minimalist Dark-Mode",
+    "dimensions": {
+      "fixed_width": "380px",
+      "max_height": "600px"
+    },
+    "token_definition": {
+      "colors": {
+        "background": "#0b1326",
+        "surface": "#0b1326",
+        "surface_bright": "#31394d",
+        "primary_gradient": "linear-gradient(to right, #3B82F6, #8B5CF6)",
+        "on_surface": "#dae2fd",
+        "on_surface_muted": "#94A3B8"
+      },
+      "typography": {
+        "font_family": "Inter, sans-serif",
+        "headline_lg": { "size": "24px", "weight": "700", "line_height": "32px" },
+        "body_md": { "size": "14px", "weight": "400", "line_height": "20px" },
+        "label_bold": { "size": "12px", "weight": "600", "line_height": "16px" }
+      },
+      "elevation_depth": {
+        "panel_level_2": {
+          "backdrop_filter": "blur(24px)",
+          "background_opacity": "65%",
+          "border": "1px solid rgba(140, 144, 159, 0.15)"
+        },
+        "popover_level_3": {
+          "backdrop_filter": "blur(40px)",
+          "background_opacity": "85%",
+          "box_shadow": "0px 4px 20px rgba(0,0,0,0.25)"
+        }
+      },
+      "shapes": {
+        "main_panels": "rounded-xl (24px)",
+        "buttons_and_inputs": "rounded-lg (12px)",
+        "chips": "pill-shaped"
+      }
+    },
+    "view_mappings": {
+      "main_timer_view": {
+        "reference_asset": "image_49ffff.png",
+        "description": "Displays the central radial countdown dial, focus phase navigation headers, playback control nodes, and persistent footer navigation targets."
+      },
+      "blocklist_view": {
+        "reference_asset": "image_4a02e0.png",
+        "description": "Houses the single-line site distribution textarea block, active blocklist arrays featuring interactive removal garbage nodes, and productivity metrics badges."
+      },
+      "settings_view": {
+        "reference_asset": "image_4a02c4.png",
+        "description": "Exposes numerical timing overrides, sequence iteration controls via plus-minus steppers, and audio control sliders."
+      }
+    }
+  },
+  "cross_browser_compilation_strategy": {
+    "build_tooling": "Vite packed alongside native bundle asset splitters to cleanly isolate background artifacts.",
+    "compatibility_layer": "Inclusion of global runtime webextension-polyfil modules to bind Chrome namespace behaviors into uniform async-await syntax structures for native Firefox integration."
+  },
+  "non_functional_requirements": {
+    "performance": "Popup frame load rendering and epoch serialization sync cycles must settle in under 120ms.",
+    "security": "Strict adherence to a local operational sandbox model. Third-party structural analytics injections, external asset loads, or data transmissions are explicitly barred.",
+    "resource_management": "Service workers must aggressively handle lifetime idle timeouts, maintaining a low memory execution profile during inactive states."
+  }
+}
