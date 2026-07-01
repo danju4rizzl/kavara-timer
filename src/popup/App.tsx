@@ -25,7 +25,7 @@ export function App() {
   );
 
   return (
-    <div className="w-[380px] min-h-[500px] max-h-[600px] flex flex-col bg-transparent overflow-hidden">
+    <div className="w-full h-screen flex flex-col bg-transparent overflow-hidden">
       <Header
         onSettingsClick={() => setActiveView("settings")}
         showBack={activeView === "settings"}

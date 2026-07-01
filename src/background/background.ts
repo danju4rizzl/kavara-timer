@@ -27,6 +27,13 @@ const ALARM_NAME = "focusflow-tick";
 
 chrome.runtime.onInstalled.addListener(async () => {
   await initialize();
+
+  // Configure side panel to open on action click
+  if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+    chrome.sidePanel
+      .setPanelBehavior({ openPanelOnActionClick: true })
+      .catch((error) => console.error("Error setting panel behavior:", error));
+  }
 });
 
 chrome.runtime.onStartup.addListener(async () => {
