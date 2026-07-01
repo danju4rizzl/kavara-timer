@@ -1,29 +1,6 @@
-const DYNAMIC_RULE_START_ID = 1000;
-
-export async function enableBlocking(domains: string[]): Promise<void> {
-  if (domains.length === 0) return;
-
+export async function enableBlocking(_domains: string[]): Promise<void> {
+  // Clearing network-level blocking rules as blocking is handled via content script overlay.
   await disableBlocking();
-
-  const addRules: chrome.declarativeNetRequest.Rule[] = domains.map((domain, index) => ({
-    id: DYNAMIC_RULE_START_ID + index,
-    priority: 1,
-    action: {
-      type: chrome.declarativeNetRequest.RuleActionType.REDIRECT,
-      redirect: {
-        extensionPath: "/blocked.html",
-      },
-    },
-    condition: {
-      urlFilter: `||${domain.replace(/^www\./, "")}`,
-      resourceTypes: [chrome.declarativeNetRequest.ResourceType.MAIN_FRAME],
-    },
-  }));
-
-  await chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [],
-    addRules,
-  });
 }
 
 export async function disableBlocking(): Promise<void> {

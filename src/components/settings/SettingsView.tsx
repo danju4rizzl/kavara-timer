@@ -140,6 +140,18 @@ export function SettingsView({
         </div>
       </div>
 
+      {import.meta.env.DEV && (
+        <div className="glass-panel border-rose-500/15 bg-rose-500/5 rounded-2xl px-5 py-4 space-y-2 shadow-sm">
+          <p className="text-xs text-rose-400 font-bold">Developer Options</p>
+          <button
+            onClick={() => sendMessage({ type: "DEV_RESET_STORAGE" })}
+            className="w-full py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+          >
+            Reset Dev Storage & State
+          </button>
+        </div>
+      )}
+
       {/* Action buttons */}
       <div className="flex items-center gap-3 pt-2.5 pb-4">
         <button

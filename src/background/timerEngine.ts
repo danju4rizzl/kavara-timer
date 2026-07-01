@@ -1,11 +1,20 @@
 import type { TimerState, TimerPhase } from "@/types/timer";
 import type { TimerSettings } from "@/types/settings";
 import { createInitialTimerState } from "@/types/timer";
-import { getTimerState, saveTimerState, getSettings, getFocusMetrics, saveFocusMetrics } from "./storageService";
 import { enableBlocking, disableBlocking } from "./blockingEngine";
 import { showPhaseCompleteNotification } from "./notificationService";
 import { playAlarm } from "./offscreenManager";
-import { getBlockedSites } from "./storageService";
+import {
+  getTimerState,
+  saveTimerState,
+  getSettings,
+  getFocusMetrics,
+  saveFocusMetrics,
+  getBlockedSites,
+  getCustomBlockListActive,
+  getSocialMediaBlockerActive,
+  getSocialMediaBlockerSites,
+} from "./storageService";
 
 const ALARM_NAME = "focusflow-tick";
 const TICK_INTERVAL_SECONDS = 1;
@@ -99,10 +108,24 @@ async function handlePhaseComplete(): Promise<void> {
   broadcastState();
 }
 
-async function enforceBlockingForPhase(phase: TimerPhase): Promise<void> {
+export async function enforceBlockingForPhase(phase: TimerPhase): Promise<void> {
   if (phase === "pomodoro") {
-    const sites = await getBlockedSites();
-    const domains = sites.map((site) => site.domain);
+    const domains: string[] = [];
+
+    // Custom blocked list
+    const customActive = await getCustomBlockListActive();
+    if (customActive) {
+      const customSites = await getBlockedSites();
+      domains.push(...customSites.filter((s) => s.isActive !== false).map((s) => s.domain));
+    }
+
+    // Social media blocker list
+    const smActive = await getSocialMediaBlockerActive();
+    if (smActive) {
+      const smSites = await getSocialMediaBlockerSites();
+      domains.push(...smSites.filter((s) => s.isActive !== false).map((s) => s.domain));
+    }
+
     await enableBlocking(domains);
   } else {
     await disableBlocking();

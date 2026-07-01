@@ -4,10 +4,15 @@ import type { PopupMessage, BackgroundMessage } from "@/types/messages";
 import { DEFAULT_FOCUS_METRICS } from "@/types/blocklist";
 
 interface BlocklistHook {
-  blockedSites: BlockedSite[];
+  customSites: BlockedSite[];
+  customActive: boolean;
+  socialMediaSites: BlockedSite[];
+  socialMediaActive: boolean;
   focusMetrics: FocusMetrics;
   addSites: (sites: BlockedSite[]) => void;
-  removeSite: (siteId: string) => void;
+  toggleSite: (siteId: string, listType: "custom" | "socialMedia") => void;
+  deleteSite: (siteId: string, listType: "custom" | "socialMedia") => void;
+  toggleBlocklistActive: (listType: "custom" | "socialMedia", isActive: boolean) => void;
   clearMetrics: () => void;
 }
 
@@ -15,7 +20,10 @@ export function useBlocklist(
   sendMessage: (message: PopupMessage) => void,
   onPortMessage?: (handler: (message: BackgroundMessage) => void) => void
 ): BlocklistHook {
-  const [blockedSites, setBlockedSites] = useState<BlockedSite[]>([]);
+  const [customSites, setCustomSites] = useState<BlockedSite[]>([]);
+  const [customActive, setCustomActive] = useState<boolean>(true);
+  const [socialMediaSites, setSocialMediaSites] = useState<BlockedSite[]>([]);
+  const [socialMediaActive, setSocialMediaActive] = useState<boolean>(true);
   const [focusMetrics, setFocusMetrics] = useState<FocusMetrics>(DEFAULT_FOCUS_METRICS);
   const initialized = useRef(false);
 
@@ -30,14 +38,25 @@ export function useBlocklist(
   useEffect(() => {
     if (!onPortMessage) return;
 
-    onPortMessage((message: BackgroundMessage) => {
+    const cleanup = onPortMessage((message: BackgroundMessage) => {
       if (message.type === "BLOCKED_SITES_UPDATE") {
-        setBlockedSites(message.sites);
+        // Safe destructuring supporting old and new formats
+        const custom = message.customSites ?? (message as any).sites ?? [];
+        const activeCustom = message.customActive !== false;
+        const smSites = message.socialMediaSites ?? [];
+        const activeSM = message.socialMediaActive !== false;
+
+        setCustomSites(custom);
+        setCustomActive(activeCustom);
+        setSocialMediaSites(smSites);
+        setSocialMediaActive(activeSM);
       }
       if (message.type === "FOCUS_METRICS_UPDATE") {
         setFocusMetrics(message.metrics);
       }
     });
+
+    return cleanup;
   }, [onPortMessage]);
 
   const addSites = useCallback(
@@ -47,9 +66,23 @@ export function useBlocklist(
     [sendMessage]
   );
 
-  const removeSite = useCallback(
-    (siteId: string) => {
-      sendMessage({ type: "REMOVE_BLOCKED_SITE", siteId });
+  const toggleSite = useCallback(
+    (siteId: string, listType: "custom" | "socialMedia") => {
+      sendMessage({ type: "TOGGLE_BLOCKED_SITE", siteId, listType });
+    },
+    [sendMessage]
+  );
+
+  const deleteSite = useCallback(
+    (siteId: string, listType: "custom" | "socialMedia") => {
+      sendMessage({ type: "DELETE_BLOCKED_SITE", siteId, listType });
+    },
+    [sendMessage]
+  );
+
+  const toggleBlocklistActive = useCallback(
+    (listType: "custom" | "socialMedia", isActive: boolean) => {
+      sendMessage({ type: "TOGGLE_BLOCKLIST_ACTIVE", listType, isActive });
     },
     [sendMessage]
   );
@@ -58,5 +91,16 @@ export function useBlocklist(
     sendMessage({ type: "CLEAR_FOCUS_METRICS" });
   }, [sendMessage]);
 
-  return { blockedSites, focusMetrics, addSites, removeSite, clearMetrics };
+  return {
+    customSites,
+    customActive,
+    socialMediaSites,
+    socialMediaActive,
+    focusMetrics,
+    addSites,
+    toggleSite,
+    deleteSite,
+    toggleBlocklistActive,
+    clearMetrics,
+  };
 }

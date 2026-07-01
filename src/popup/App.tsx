@@ -19,10 +19,18 @@ export function App() {
     registerMessageHandler
   );
 
-  const { blockedSites, focusMetrics, addSites, removeSite, clearMetrics } = useBlocklist(
-    sendMessage,
-    registerMessageHandler
-  );
+  const {
+    customSites,
+    customActive,
+    socialMediaSites,
+    socialMediaActive,
+    focusMetrics,
+    addSites,
+    toggleSite,
+    deleteSite,
+    toggleBlocklistActive,
+    clearMetrics,
+  } = useBlocklist(sendMessage, registerMessageHandler);
 
   return (
     <div className="w-full h-screen flex flex-col bg-transparent overflow-hidden">
@@ -38,10 +46,15 @@ export function App() {
         )}
         {activeView === "blocklist" && (
           <BlocklistView
-            blockedSites={blockedSites}
+            customSites={customSites}
+            customActive={customActive}
+            socialMediaSites={socialMediaSites}
+            socialMediaActive={socialMediaActive}
             focusMetrics={focusMetrics}
             onAddSites={addSites}
-            onRemoveSite={removeSite}
+            onToggleSite={toggleSite}
+            onDeleteSite={deleteSite}
+            onToggleBlocklistActive={toggleBlocklistActive}
             autoDetectCategories={draftSettings.autoDetectCategories}
           />
         )}

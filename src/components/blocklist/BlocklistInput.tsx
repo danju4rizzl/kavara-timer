@@ -1,16 +1,24 @@
 import { useState } from "react";
 import type { BlockedSite } from "@/types/blocklist";
+import { DEFAULT_SOCIAL_MEDIA_SITES } from "@/types/blocklist";
 import { detectCategory } from "@/lib/categoryDetector";
 
 interface BlocklistInputProps {
   onAddSites: (sites: BlockedSite[]) => void;
   autoDetectCategories: boolean;
+  customSites: BlockedSite[];
 }
 
-export function BlocklistInput({ onAddSites, autoDetectCategories }: BlocklistInputProps) {
+export function BlocklistInput({
+  onAddSites,
+  autoDetectCategories,
+  customSites,
+}: BlocklistInputProps) {
   const [inputValue, setInputValue] = useState("");
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   function handleSave() {
+    setFeedback(null);
     const lines = inputValue
       .split("\n")
       .map((line) => line.trim().toLowerCase())
@@ -20,6 +28,29 @@ export function BlocklistInput({ onAddSites, autoDetectCategories }: BlocklistIn
     const uniqueDomains = [...new Set(lines)];
 
     if (uniqueDomains.length === 0) return;
+
+    for (const domain of uniqueDomains) {
+      const normalized = domain.replace(/^www\./, "");
+
+      // 1. Check if matches any DEFAULT_SOCIAL_MEDIA_SITES (always active now)
+      const defaultSM = DEFAULT_SOCIAL_MEDIA_SITES.find(
+        (s) => s.domain.toLowerCase().replace(/^www\./, "") === normalized
+      );
+
+      if (defaultSM) {
+        setFeedback(`"${defaultSM.domain}" has already been added to the Social Media Blocker list.`);
+        return;
+      } else {
+        // 2. Check if matches custom blocker list
+        const isCustomExist = customSites.some(
+          (s) => s.domain.toLowerCase().replace(/^www\./, "") === normalized
+        );
+        if (isCustomExist) {
+          setFeedback(`"${domain}" has already been added to the Custom Blocker list.`);
+          return;
+        }
+      }
+    }
 
     const newSites: BlockedSite[] = uniqueDomains.map((domain) => ({
       id: crypto.randomUUID(),
@@ -38,11 +69,20 @@ export function BlocklistInput({ onAddSites, autoDetectCategories }: BlocklistIn
 
       <textarea
         value={inputValue}
-        onChange={(event) => setInputValue(event.target.value)}
+        onChange={(event) => {
+          setInputValue(event.target.value);
+          if (feedback) setFeedback(null); // Clear feedback when user types
+        }}
         placeholder={"Enter sites to block, one per line (e.g.,\nfacebook.com)"}
         rows={3}
         className="w-full px-4 py-3 rounded-xl bg-slate-950/40 border border-white/5 text-sm text-white placeholder:text-on-surface-muted/40 resize-none focus:outline-none focus:border-primary/45 focus:ring-1 focus:ring-primary/30 transition-all duration-200"
       />
+
+      {feedback && (
+        <div className="text-[10px] text-rose-400 bg-rose-500/10 border border-rose-500/20 py-2 px-3 rounded-xl font-medium leading-relaxed">
+          {feedback}
+        </div>
+      )}
 
       <button
         onClick={handleSave}

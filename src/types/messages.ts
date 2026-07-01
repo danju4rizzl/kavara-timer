@@ -13,6 +13,9 @@ export type PopupMessage =
   | { type: "UPDATE_SETTINGS"; settings: TimerSettings }
   | { type: "ADD_BLOCKED_SITES"; sites: BlockedSite[] }
   | { type: "REMOVE_BLOCKED_SITE"; siteId: string }
+  | { type: "TOGGLE_BLOCKED_SITE"; siteId: string; listType: "custom" | "socialMedia" }
+  | { type: "DELETE_BLOCKED_SITE"; siteId: string; listType: "custom" | "socialMedia" }
+  | { type: "TOGGLE_BLOCKLIST_ACTIVE"; listType: "custom" | "socialMedia"; isActive: boolean }
   | { type: "GET_SETTINGS" }
   | { type: "GET_BLOCKED_SITES" }
   | { type: "GET_FOCUS_METRICS" }
@@ -25,13 +28,20 @@ export type PopupMessage =
       externalAudioUrl: string;
       youtubeVideoId: string;
     }
-  | { type: "STOP_ALARM" };
+  | { type: "STOP_ALARM" }
+  | { type: "DEV_RESET_STORAGE" };
 
 /* Background → Popup broadcasts */
 export type BackgroundMessage =
   | { type: "STATE_UPDATE"; state: TimerState }
   | { type: "SETTINGS_UPDATE"; settings: TimerSettings }
-  | { type: "BLOCKED_SITES_UPDATE"; sites: BlockedSite[] }
+  | {
+      type: "BLOCKED_SITES_UPDATE";
+      customSites: BlockedSite[];
+      customActive: boolean;
+      socialMediaSites: BlockedSite[];
+      socialMediaActive: boolean;
+    }
   | { type: "FOCUS_METRICS_UPDATE"; metrics: FocusMetrics };
 
 /* Background → Offscreen messages */

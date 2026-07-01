@@ -3,7 +3,7 @@ import type { TimerSettings } from "@/types/settings";
 import type { BlockedSite, FocusMetrics } from "@/types/blocklist";
 import { createInitialTimerState } from "@/types/timer";
 import { DEFAULT_SETTINGS } from "@/types/settings";
-import { DEFAULT_FOCUS_METRICS } from "@/types/blocklist";
+import { DEFAULT_FOCUS_METRICS, DEFAULT_SOCIAL_MEDIA_SITES } from "@/types/blocklist";
 
 const STORAGE_KEYS = {
   TIMER_STATE: "timerState",
@@ -46,6 +46,36 @@ export async function getBlockedSites(): Promise<BlockedSite[]> {
 
 export async function saveBlockedSites(sites: BlockedSite[]): Promise<void> {
   await chrome.storage.sync.set({ [STORAGE_KEYS.BLOCKED_SITES]: sites });
+}
+
+export async function getCustomBlockListActive(): Promise<boolean> {
+  const result = await chrome.storage.sync.get("customBlockListActive");
+  return result.customBlockListActive !== false; // defaults to true
+}
+
+export async function saveCustomBlockListActive(active: boolean): Promise<void> {
+  await chrome.storage.sync.set({ customBlockListActive: active });
+}
+
+export async function getSocialMediaBlockerActive(): Promise<boolean> {
+  const result = await chrome.storage.sync.get("socialMediaBlockerActive");
+  return result.socialMediaBlockerActive !== false; // defaults to true
+}
+
+export async function saveSocialMediaBlockerActive(active: boolean): Promise<void> {
+  await chrome.storage.sync.set({ socialMediaBlockerActive: active });
+}
+
+export async function initializeSocialMediaSites(): Promise<void> {
+  await chrome.storage.sync.set({ socialMediaBlockerSites: DEFAULT_SOCIAL_MEDIA_SITES });
+}
+
+export async function getSocialMediaBlockerSites(): Promise<BlockedSite[]> {
+  return DEFAULT_SOCIAL_MEDIA_SITES;
+}
+
+export async function saveSocialMediaBlockerSites(_sites: BlockedSite[]): Promise<void> {
+  // Read-only
 }
 
 export async function getFocusMetrics(): Promise<FocusMetrics> {
