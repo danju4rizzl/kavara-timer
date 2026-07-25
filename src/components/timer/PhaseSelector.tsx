@@ -37,7 +37,7 @@ const PHASES: PhaseConfig[] = [
 
 export function PhaseSelector({ activePhase, onPhaseChange }: PhaseSelectorProps) {
   return (
-    <div className="flex items-center justify-center gap-2 p-2 rounded-full bg-slate-950/70 backdrop-blur-xl border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+    <div className="flex items-center justify-center gap-2 p-2 rounded-full ">
       {PHASES.map(({ id, label, icon: Icon, activeGradient }) => {
         const isActive = activePhase === id;
 
@@ -46,7 +46,7 @@ export function PhaseSelector({ activePhase, onPhaseChange }: PhaseSelectorProps
             key={id}
             onClick={() => onPhaseChange(id)}
             className={cn(
-              "flex items-center justify-center gap-2 px-4.5 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 whitespace-nowrap border outline-none cursor-pointer select-none",
+              "grid items-center justify-center gap-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 whitespace-nowrap border outline-none cursor-pointer select-none px-5",
               isActive
                 ? cn(activeGradient, "scale-[1.02]")
                 : "text-slate-300 hover:text-white border-transparent hover:bg-white/10 active:scale-95"
