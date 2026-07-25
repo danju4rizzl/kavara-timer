@@ -10,7 +10,7 @@ import {
   setPhase,
   handleAlarmTick,
   getCurrentState,
-  invalidateSettingsCache,
+  handleSettingsUpdate,
   enforceBlockingForPhase,
 } from "./timerEngine";
 import { DEFAULT_SOCIAL_MEDIA_SITES, BlockedSite } from "@/types/blocklist";
@@ -33,6 +33,9 @@ import { playAlarm, stopAlarm } from "./offscreenManager";
 
 const ALARM_NAME = "focusflow-tick";
 
+// Always start initialization when background script loads (waking up or starting up)
+initialize().catch((error) => console.error("Error during initialization:", error));
+
 chrome.runtime.onInstalled.addListener(async () => {
   await initializeSocialMediaSites();
   await initialize();
@@ -52,7 +55,15 @@ chrome.runtime.onStartup.addListener(async () => {
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === ALARM_NAME) {
+    await initialize();
     await handleAlarmTick();
+  }
+});
+
+chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIndex) => {
+  if (notificationId === "focusflow-phase-complete" && buttonIndex === 0) {
+    await initialize();
+    await startTimer();
   }
 });
 
@@ -66,9 +77,10 @@ async function sendBlockedSitesUpdate(port: chrome.runtime.Port) {
   });
 }
 
-chrome.runtime.onConnect.addListener((port) => {
+chrome.runtime.onConnect.addListener(async (port) => {
   if (port.name !== POPUP_PORT_NAME) return;
 
+  await initialize();
   registerPort(port);
 
   port.onMessage.addListener(async (message: PopupMessage) => {
@@ -99,7 +111,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       case "UPDATE_SETTINGS":
         await saveSettings(message.settings);
-        invalidateSettingsCache();
+        await handleSettingsUpdate(message.settings);
         port.postMessage({ type: "SETTINGS_UPDATE", settings: message.settings });
         break;
 
@@ -215,7 +227,7 @@ chrome.runtime.onConnect.addListener((port) => {
           chrome.storage.sync.clear()
         ]);
         await initializeSocialMediaSites();
-        await initialize();
+        await initialize(true);
         port.postMessage({ type: "STATE_UPDATE", state: getCurrentState() });
         port.postMessage({ type: "SETTINGS_UPDATE", settings: await getSettings() });
         await sendBlockedSitesUpdate(port);
@@ -224,3 +236,22 @@ chrome.runtime.onConnect.addListener((port) => {
     }
   });
 });
+
+// Listen to messages from content scripts and other parts of the extension
+chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
+  if (
+    message &&
+    typeof message === "object" &&
+    "type" in message &&
+    (message as { type: string }).type === "STOP_TIMER"
+  ) {
+    resetTimer()
+      .then(() => sendResponse({ success: true }))
+      .catch((error: Error) => {
+        console.error("Failed to stop timer:", error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true; // Keep message channel open for async response
+  }
+});
+

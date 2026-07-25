@@ -40,7 +40,7 @@ export function App() {
         onBackClick={() => setActiveView("timer")}
       />
 
-      <main className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 scroll-smooth">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 scroll-smooth">
         {activeView === "timer" && (
           <TimerView timerState={timerState} sendMessage={sendMessage} />
         )}

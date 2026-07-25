@@ -20,6 +20,7 @@ const PHASE_MESSAGES: Record<TimerPhase, { title: string; body: string }> = {
 
 export function showPhaseCompleteNotification(completedPhase: TimerPhase): void {
   const message = PHASE_MESSAGES[completedPhase];
+  const buttons = completedPhase === "longBreak" ? [{ title: "Start New Focus Cycle" }] : undefined;
 
   chrome.notifications.create(NOTIFICATION_ID, {
     type: "basic",
@@ -28,5 +29,6 @@ export function showPhaseCompleteNotification(completedPhase: TimerPhase): void 
     message: `${PHASE_LABELS[completedPhase]} finished. ${message.body}`,
     priority: 2,
     silent: true,
+    buttons,
   });
 }

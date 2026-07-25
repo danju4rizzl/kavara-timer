@@ -59,6 +59,8 @@ shadowStyle.textContent = `
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: #dae2fd;
     box-sizing: border-box;
+    padding: 12px;
+    overflow-y: auto;
   }
   .container {
     text-align: center;
@@ -169,6 +171,35 @@ shadowStyle.textContent = `
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.4; transform: scale(0.9); }
   }
+  .button-group {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    width: 100%;
+    margin-top: 8px;
+  }
+  button.btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    color: white;
+    border: none;
+    flex: 1;
+  }
+  button.btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    border: none;
+  }
+  button.btn-danger {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    flex: 1;
+  }
+  button.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ffffff;
+  }
 `;
 shadow.appendChild(shadowStyle);
 
@@ -178,35 +209,85 @@ overlayElement.className = "overlay";
 
 overlayElement.innerHTML = `
   <div class="container">
-    <div class="shield">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-      </svg>
+    <!-- Main Blocker View -->
+    <div id="focusflow-main-view" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+      <div class="shield">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <h1>Stay Focused</h1>
+      <div class="badge">
+        <span class="pulse-dot"></span>
+        Focus Session Active
+      </div>
+      <div class="timer" id="focusflow-countdown">--:--</div>
+      <p class="message">This site is blocked during your Pomodoro session.<br>Stay on track — you've got this!</p>
+      <button id="focusflow-stop-btn">Stop focus session?</button>
     </div>
-    <h1>Stay Focused</h1>
-    <div class="badge">
-      <span class="pulse-dot"></span>
-      Focus Session Active
+
+    <!-- Confirmation View -->
+    <div id="focusflow-confirm-view" style="display: none; flex-direction: column; align-items: center; width: 100%;">
+      <div class="shield" style="background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); box-shadow: 0 0 35px rgba(239, 68, 68, 0.4);">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+      <h1>Stop Timer?</h1>
+      <p class="message" style="margin-bottom: 24px;">Do you want to continue staying focused, or are you sure you want to stop the timer?</p>
+      <div class="button-group">
+        <button id="focusflow-continue-btn" class="btn-primary">Keep Focusing</button>
+        <button id="focusflow-yes-stop-btn" class="btn-danger">Yes, Stop Timer</button>
+      </div>
     </div>
-    <div class="timer" id="focusflow-countdown">--:--</div>
-    <p class="message">This site is blocked during your Pomodoro session.<br>Stay on track — you've got this!</p>
-    <button id="focusflow-back-btn">Go Back</button>
   </div>
 `;
 
 shadow.appendChild(overlayElement);
 
-// Setup "Go Back" button click handler
-const backBtn = shadow.getElementById("focusflow-back-btn");
-if (backBtn) {
-  backBtn.addEventListener("click", () => {
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      // If there is no back history (e.g., opened in a new tab), try closing the tab
-      window.close();
-    }
+// Setup view toggle event handlers
+const mainView = shadow.getElementById("focusflow-main-view");
+const confirmView = shadow.getElementById("focusflow-confirm-view");
+const stopBtn = shadow.getElementById("focusflow-stop-btn");
+const continueBtn = shadow.getElementById("focusflow-continue-btn");
+const yesStopBtn = shadow.getElementById("focusflow-yes-stop-btn");
+
+if (stopBtn && mainView && confirmView) {
+  stopBtn.addEventListener("click", () => {
+    mainView.style.display = "none";
+    confirmView.style.display = "flex";
+  });
+}
+
+if (continueBtn && mainView && confirmView) {
+  continueBtn.addEventListener("click", () => {
+    confirmView.style.display = "none";
+    mainView.style.display = "flex";
+  });
+}
+
+if (yesStopBtn) {
+  yesStopBtn.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ type: "STOP_TIMER" }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error calling STOP_TIMER:", chrome.runtime.lastError);
+        return;
+      }
+      if (response && response.success) {
+        console.log("Timer stopped successfully.");
+        document.documentElement.classList.remove("focusflow-blocked");
+        overlayRoot.style.display = "none";
+        const mainViewEl = shadow.getElementById("focusflow-main-view");
+        const confirmViewEl = shadow.getElementById("focusflow-confirm-view");
+        if (mainViewEl && confirmViewEl) {
+          mainViewEl.style.display = "flex";
+          confirmViewEl.style.display = "none";
+        }
+      }
+    });
   });
 }
 
@@ -266,6 +347,16 @@ function checkAndApplyBlocking(): void {
           const isBlocked = isDomainBlocked(window.location.hostname, customSites, customActive, smSites, smActive);
 
           if (isFocusRunning && isBlocked) {
+            // Reset to main view state if the overlay is transitioning from hidden to visible
+            if (overlayRoot.style.display !== "block") {
+              const mainViewEl = shadow.getElementById("focusflow-main-view");
+              const confirmViewEl = shadow.getElementById("focusflow-confirm-view");
+              if (mainViewEl && confirmViewEl) {
+                mainViewEl.style.display = "flex";
+                confirmViewEl.style.display = "none";
+              }
+            }
+
             // Apply blocking styling to page and show overlay
             document.documentElement.classList.add("focusflow-blocked");
             overlayRoot.style.display = "block";
@@ -279,6 +370,12 @@ function checkAndApplyBlocking(): void {
             // Remove blocking styling and hide overlay
             document.documentElement.classList.remove("focusflow-blocked");
             overlayRoot.style.display = "none";
+            const mainViewEl = shadow.getElementById("focusflow-main-view");
+            const confirmViewEl = shadow.getElementById("focusflow-confirm-view");
+            if (mainViewEl && confirmViewEl) {
+              mainViewEl.style.display = "flex";
+              confirmViewEl.style.display = "none";
+            }
           }
         }
       );
@@ -294,6 +391,17 @@ checkAndApplyBlocking();
 // Listen to storage changes to dynamically apply/remove overlay
 chrome.storage.onChanged.addListener((_changes, namespace) => {
   if (namespace === "local" || namespace === "sync") {
+    checkAndApplyBlocking();
+  }
+});
+
+// Recheck and apply blocking when page is shown or becomes visible (e.g. BFCache restoration or tab switch)
+window.addEventListener("pageshow", () => {
+  checkAndApplyBlocking();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
     checkAndApplyBlocking();
   }
 });

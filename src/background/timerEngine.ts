@@ -3,7 +3,7 @@ import type { TimerSettings } from "@/types/settings";
 import { createInitialTimerState } from "@/types/timer";
 import { enableBlocking, disableBlocking } from "./blockingEngine";
 import { showPhaseCompleteNotification } from "./notificationService";
-import { playAlarm } from "./offscreenManager";
+import { playAlarm, stopAlarm } from "./offscreenManager";
 import {
   getTimerState,
   saveTimerState,
@@ -61,8 +61,7 @@ function getDurationForPhase(phase: TimerPhase, settings: TimerSettings): number
 
 function determineNextPhase(state: TimerState, settings: TimerSettings): TimerPhase {
   if (state.phase === "pomodoro") {
-    const completedCount = state.completedPomodoros + 1;
-    return completedCount % settings.longBreakInterval === 0 ? "longBreak" : "shortBreak";
+    return state.completedPomodoros % settings.longBreakInterval === 0 ? "longBreak" : "shortBreak";
   }
   return "pomodoro";
 }
@@ -70,6 +69,7 @@ function determineNextPhase(state: TimerState, settings: TimerSettings): TimerPh
 async function handlePhaseComplete(): Promise<void> {
   const settings = await loadSettings();
   const wasPomodoro = currentState.phase === "pomodoro";
+  const wasLongBreak = currentState.phase === "longBreak";
 
   if (wasPomodoro) {
     currentState.completedPomodoros += 1;
@@ -95,13 +95,16 @@ async function handlePhaseComplete(): Promise<void> {
   currentState.totalSeconds = totalSeconds;
   currentState.remainingSeconds = totalSeconds;
 
-  if (settings.autoStartNextPhase) {
-    currentState.status = "running";
-    await enforceBlockingForPhase(nextPhase);
-  } else {
+  if (wasLongBreak) {
+    // End of cycle - pause the timer and wait for user prompt
     currentState.status = "idle";
     await disableBlocking();
     await chrome.alarms.clear(ALARM_NAME);
+  } else {
+    // Within the cycle - auto start the next phase immediately
+    currentState.status = "running";
+    await enforceBlockingForPhase(nextPhase);
+    await chrome.alarms.create(ALARM_NAME, { periodInMinutes: TICK_INTERVAL_SECONDS / 60 });
   }
 
   await saveTimerState(currentState);
@@ -132,18 +135,29 @@ export async function enforceBlockingForPhase(phase: TimerPhase): Promise<void> 
   }
 }
 
-export async function initialize(): Promise<void> {
-  currentState = await getTimerState();
+let initializationPromise: Promise<void> | null = null;
 
-  if (currentState.status === "running") {
-    await chrome.alarms.create(ALARM_NAME, { periodInMinutes: TICK_INTERVAL_SECONDS / 60 });
-    await enforceBlockingForPhase(currentState.phase);
+export function initialize(force = false): Promise<void> {
+  if (force) {
+    initializationPromise = null;
   }
+  if (!initializationPromise) {
+    initializationPromise = (async () => {
+      currentState = await getTimerState();
 
-  broadcastState();
+      if (currentState.status === "running") {
+        await chrome.alarms.create(ALARM_NAME, { periodInMinutes: TICK_INTERVAL_SECONDS / 60 });
+        await enforceBlockingForPhase(currentState.phase);
+      }
+
+      broadcastState();
+    })();
+  }
+  return initializationPromise;
 }
 
 export async function startTimer(): Promise<void> {
+  await initialize();
   if (currentState.status === "running") return;
 
   currentState.status = "running";
@@ -154,6 +168,7 @@ export async function startTimer(): Promise<void> {
 }
 
 export async function pauseTimer(): Promise<void> {
+  await initialize();
   if (currentState.status !== "running") return;
 
   currentState.status = "paused";
@@ -164,6 +179,7 @@ export async function pauseTimer(): Promise<void> {
 }
 
 export async function resetTimer(): Promise<void> {
+  await initialize();
   const settings = await loadSettings();
   const totalSeconds = getDurationForPhase(currentState.phase, settings);
 
@@ -172,17 +188,20 @@ export async function resetTimer(): Promise<void> {
   currentState.totalSeconds = totalSeconds;
 
   await chrome.alarms.clear(ALARM_NAME);
+  await stopAlarm();
   await disableBlocking();
   await saveTimerState(currentState);
   broadcastState();
 }
 
 export async function skipPhase(): Promise<void> {
+  await initialize();
   await chrome.alarms.clear(ALARM_NAME);
   await handlePhaseComplete();
 }
 
 export async function setPhase(phase: TimerPhase): Promise<void> {
+  await initialize();
   if (currentState.status === "running") {
     await chrome.alarms.clear(ALARM_NAME);
     await disableBlocking();
@@ -201,6 +220,7 @@ export async function setPhase(phase: TimerPhase): Promise<void> {
 }
 
 export async function handleAlarmTick(): Promise<void> {
+  await initialize();
   if (currentState.status !== "running") return;
 
   currentState.remainingSeconds = Math.max(0, currentState.remainingSeconds - TICK_INTERVAL_SECONDS);
@@ -217,4 +237,15 @@ export async function handleAlarmTick(): Promise<void> {
 
 export function getCurrentState(): TimerState {
   return { ...currentState };
+}
+
+export async function handleSettingsUpdate(settings: TimerSettings): Promise<void> {
+  invalidateSettingsCache();
+  if (currentState.status === "idle") {
+    const totalSeconds = getDurationForPhase(currentState.phase, settings);
+    currentState.totalSeconds = totalSeconds;
+    currentState.remainingSeconds = totalSeconds;
+    await saveTimerState(currentState);
+    broadcastState();
+  }
 }
