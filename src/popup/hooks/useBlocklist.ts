@@ -61,6 +61,7 @@ export function useBlocklist(
 
   const addSites = useCallback(
     (sites: BlockedSite[]) => {
+      setCustomSites((prev) => [...prev, ...sites]);
       sendMessage({ type: "ADD_BLOCKED_SITES", sites });
     },
     [sendMessage]
@@ -68,6 +69,17 @@ export function useBlocklist(
 
   const toggleSite = useCallback(
     (siteId: string, listType: "custom" | "socialMedia") => {
+      if (listType === "custom") {
+        setCustomSites((prev) =>
+          prev.map((site) => {
+            if (site.id === siteId || site.domain === siteId) {
+              const currentActive = site.isActive !== false;
+              return { ...site, isActive: !currentActive };
+            }
+            return site;
+          })
+        );
+      }
       sendMessage({ type: "TOGGLE_BLOCKED_SITE", siteId, listType });
     },
     [sendMessage]
@@ -75,6 +87,9 @@ export function useBlocklist(
 
   const deleteSite = useCallback(
     (siteId: string, listType: "custom" | "socialMedia") => {
+      if (listType === "custom") {
+        setCustomSites((prev) => prev.filter((site) => site.id !== siteId && site.domain !== siteId));
+      }
       sendMessage({ type: "DELETE_BLOCKED_SITE", siteId, listType });
     },
     [sendMessage]
@@ -82,6 +97,11 @@ export function useBlocklist(
 
   const toggleBlocklistActive = useCallback(
     (listType: "custom" | "socialMedia", isActive: boolean) => {
+      if (listType === "custom") {
+        setCustomActive(isActive);
+      } else {
+        setSocialMediaActive(isActive);
+      }
       sendMessage({ type: "TOGGLE_BLOCKLIST_ACTIVE", listType, isActive });
     },
     [sendMessage]

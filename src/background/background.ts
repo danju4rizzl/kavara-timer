@@ -3,6 +3,7 @@ import type { PopupMessage } from "@/types/messages";
 import {
   initialize,
   registerPort,
+  broadcastMessage,
   startTimer,
   pauseTimer,
   resetTimer,
@@ -67,23 +68,33 @@ chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIn
   }
 });
 
-async function sendBlockedSitesUpdate(port: chrome.runtime.Port) {
-  port.postMessage({
-    type: "BLOCKED_SITES_UPDATE",
+async function sendBlockedSitesUpdate(port?: chrome.runtime.Port) {
+  const update = {
+    type: "BLOCKED_SITES_UPDATE" as const,
     customSites: await getBlockedSites(),
     customActive: await getCustomBlockListActive(),
     socialMediaSites: await getSocialMediaBlockerSites(),
     socialMediaActive: await getSocialMediaBlockerActive(),
-  });
+  };
+
+  if (port) {
+    try {
+      port.postMessage(update);
+    } catch {
+      // Port may have disconnected
+    }
+  }
+
+  broadcastMessage(update);
 }
 
-chrome.runtime.onConnect.addListener(async (port) => {
+chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== POPUP_PORT_NAME) return;
 
-  await initialize();
   registerPort(port);
 
   port.onMessage.addListener(async (message: PopupMessage) => {
+    await initialize();
     switch (message.type) {
       case "GET_STATE":
         port.postMessage({ type: "STATE_UPDATE", state: getCurrentState() });
@@ -164,7 +175,7 @@ chrome.runtime.onConnect.addListener(async (port) => {
 
       case "REMOVE_BLOCKED_SITE": {
         const sites = await getBlockedSites();
-        const filteredSites = sites.filter((site) => site.id !== message.siteId);
+        const filteredSites = sites.filter((site) => site.id !== message.siteId && site.domain !== message.siteId);
         await saveBlockedSites(filteredSites);
         await enforceBlockingForPhase(getCurrentState().phase);
         await sendBlockedSitesUpdate(port);
@@ -174,7 +185,13 @@ chrome.runtime.onConnect.addListener(async (port) => {
       case "TOGGLE_BLOCKED_SITE": {
         if (message.listType === "custom") {
           const sites = await getBlockedSites();
-          const updated = sites.map((s) => (s.id === message.siteId ? { ...s, isActive: !s.isActive } : s));
+          const updated = sites.map((s) => {
+            if (s.id === message.siteId || s.domain === message.siteId) {
+              const currentActive = s.isActive !== false;
+              return { ...s, isActive: !currentActive };
+            }
+            return s;
+          });
           await saveBlockedSites(updated);
         }
         await enforceBlockingForPhase(getCurrentState().phase);
@@ -185,7 +202,7 @@ chrome.runtime.onConnect.addListener(async (port) => {
       case "DELETE_BLOCKED_SITE": {
         if (message.listType === "custom") {
           const sites = await getBlockedSites();
-          const updated = sites.filter((s) => s.id !== message.siteId);
+          const updated = sites.filter((s) => s.id !== message.siteId && s.domain !== message.siteId);
           await saveBlockedSites(updated);
         }
         await enforceBlockingForPhase(getCurrentState().phase);

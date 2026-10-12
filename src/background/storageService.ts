@@ -41,11 +41,21 @@ export async function saveSettings(settings: TimerSettings): Promise<void> {
 
 export async function getBlockedSites(): Promise<BlockedSite[]> {
   const result = await chrome.storage.sync.get(STORAGE_KEYS.BLOCKED_SITES);
-  return (result[STORAGE_KEYS.BLOCKED_SITES] as BlockedSite[]) ?? [];
+  const sites = (result[STORAGE_KEYS.BLOCKED_SITES] as BlockedSite[]) ?? [];
+  return sites.map((site) => ({
+    ...site,
+    id: site.id || site.domain || crypto.randomUUID(),
+    isActive: site.isActive !== false,
+  }));
 }
 
 export async function saveBlockedSites(sites: BlockedSite[]): Promise<void> {
-  await chrome.storage.sync.set({ [STORAGE_KEYS.BLOCKED_SITES]: sites });
+  const sanitizedSites = sites.map((site) => ({
+    ...site,
+    id: site.id || site.domain || crypto.randomUUID(),
+    isActive: site.isActive !== false,
+  }));
+  await chrome.storage.sync.set({ [STORAGE_KEYS.BLOCKED_SITES]: sanitizedSites });
 }
 
 export async function getCustomBlockListActive(): Promise<boolean> {

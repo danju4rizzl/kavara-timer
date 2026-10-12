@@ -57,6 +57,7 @@ export function BlocklistInput({
       domain,
       category: autoDetectCategories ? detectCategory(domain) : "Other",
       addedAt: Date.now(),
+      isActive: true,
     }));
 
     onAddSites(newSites);

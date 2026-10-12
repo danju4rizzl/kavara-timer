@@ -1,5 +1,6 @@
 import type { TimerState, TimerPhase } from "@/types/timer";
 import type { TimerSettings } from "@/types/settings";
+import type { BackgroundMessage } from "@/types/messages";
 import { createInitialTimerState } from "@/types/timer";
 import { enableBlocking, disableBlocking } from "./blockingEngine";
 import { showPhaseCompleteNotification } from "./notificationService";
@@ -32,11 +33,18 @@ export function registerPort(port: chrome.runtime.Port): void {
   });
 }
 
-function broadcastState(): void {
-  const message = { type: "STATE_UPDATE", state: currentState };
+export function broadcastMessage(message: BackgroundMessage): void {
   for (const port of connectedPorts) {
-    port.postMessage(message);
+    try {
+      port.postMessage(message);
+    } catch {
+      // Port may be closed or disconnected
+    }
   }
+}
+
+function broadcastState(): void {
+  broadcastMessage({ type: "STATE_UPDATE", state: currentState });
 }
 
 async function loadSettings(): Promise<TimerSettings> {

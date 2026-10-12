@@ -24,37 +24,66 @@ export function useTimerConnection(): TimerConnection {
     };
   }, []);
 
-  useEffect(() => {
-    const port = chrome.runtime.connect({ name: POPUP_PORT_NAME });
-    portRef.current = port;
-    setIsConnected(true);
+  const connectPort = useCallback(() => {
+    try {
+      const port = chrome.runtime.connect({ name: POPUP_PORT_NAME });
+      portRef.current = port;
+      setIsConnected(true);
 
-    port.onMessage.addListener((message: BackgroundMessage) => {
-      if (message.type === "STATE_UPDATE") {
-        setTimerState(message.state);
-      }
+      port.onMessage.addListener((message: BackgroundMessage) => {
+        if (message.type === "STATE_UPDATE") {
+          setTimerState(message.state);
+        }
 
-      for (const handler of handlersRef.current) {
-        handler(message);
-      }
-    });
+        for (const handler of handlersRef.current) {
+          handler(message);
+        }
+      });
 
-    port.onDisconnect.addListener(() => {
+      port.onDisconnect.addListener(() => {
+        portRef.current = null;
+        setIsConnected(false);
+      });
+
+      port.postMessage({ type: "GET_STATE" });
+      return port;
+    } catch (error) {
+      console.error("Failed to connect to background port:", error);
       portRef.current = null;
       setIsConnected(false);
-    });
+      return null;
+    }
+  }, []);
 
-    port.postMessage({ type: "GET_STATE" });
+  useEffect(() => {
+    const port = connectPort();
 
     return () => {
-      port.disconnect();
+      port?.disconnect();
       portRef.current = null;
     };
-  }, []);
+  }, [connectPort]);
 
-  const sendMessage = useCallback((message: PopupMessage) => {
-    portRef.current?.postMessage(message);
-  }, []);
+  const sendMessage = useCallback(
+    (message: PopupMessage) => {
+      try {
+        let activePort = portRef.current;
+        if (!activePort) {
+          activePort = connectPort();
+        }
+        activePort?.postMessage(message);
+      } catch (error) {
+        console.warn("Error posting message to port, attempting to reconnect:", error);
+        try {
+          const freshPort = connectPort();
+          freshPort?.postMessage(message);
+        } catch (retryError) {
+          console.error("Failed to send message after reconnect:", retryError);
+        }
+      }
+    },
+    [connectPort]
+  );
 
   return { timerState, sendMessage, registerMessageHandler, isConnected };
 }

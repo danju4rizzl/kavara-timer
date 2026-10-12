@@ -66,7 +66,11 @@ export function BlockedSiteCard({ site, onToggle, onRemove, isReadOnly = false }
           {/* Toggle Switch */}
           {onToggle && (
             <button
-              onClick={() => onToggle(site.id)}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggle(site.id || site.domain);
+              }}
               className={cn(
                 "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
                 isActive ? "bg-primary" : "bg-slate-800"
@@ -86,11 +90,15 @@ export function BlockedSiteCard({ site, onToggle, onRemove, isReadOnly = false }
           {/* Delete button */}
           {onRemove && (
             <button
-              onClick={() => onRemove(site.id)}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRemove(site.id || site.domain);
+              }}
               className="p-1.5 rounded-lg text-on-surface-muted/60 hover:text-error hover:bg-error/10 active:scale-90 transition-all duration-200 opacity-70 group-hover:opacity-100 cursor-pointer"
               aria-label={`Remove ${site.domain}`}
             >
-              <Trash2 className="w-4 h-4" strokeWidth={1.8} />
+              <Trash2 className="w-4 h-4 pointer-events-none" strokeWidth={1.8} />
             </button>
           )}
         </div>
