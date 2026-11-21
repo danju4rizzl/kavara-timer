@@ -13,6 +13,7 @@ import {
   getCurrentState,
   handleSettingsUpdate,
   enforceBlockingForPhase,
+  markFocusSoundFailed,
 } from "./timerEngine";
 import { DEFAULT_SOCIAL_MEDIA_SITES, BlockedSite } from "@/types/blocklist";
 import {
@@ -28,18 +29,45 @@ import {
   saveSocialMediaBlockerActive,
   getSocialMediaBlockerSites,
   initializeSocialMediaSites,
+  getFocusStats,
+  recordBlockedAttempt,
+  saveFocusMetrics,
+  clearFocusHistory,
 } from "./storageService";
 
-import { playAlarm, stopAlarm } from "./offscreenManager";
+import { playCue, previewSource, stopCue, onSoundStatus } from "./offscreenManager";
+import type { OffscreenReport } from "@/types/messages";
 
 const ALARM_NAME = "focusflow-tick";
 
 // Always start initialization when background script loads (waking up or starting up)
 initialize().catch((error) => console.error("Error during initialization:", error));
 
+/**
+ * Chrome/Edge don't run content scripts in tabs that were already open when the
+ * extension is installed, updated or reloaded, so the blocker would silently
+ * not work on those tabs until they were refreshed. Inject it now. The script
+ * guards against running twice (see content.ts).
+ */
+async function injectIntoOpenTabs(): Promise<void> {
+  const tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] });
+  await Promise.all(
+    tabs.map((tab) =>
+      tab.id === undefined || tab.discarded
+        ? undefined
+        : chrome.scripting
+            .executeScript({ target: { tabId: tab.id }, files: ["content.js"] })
+            .catch(() => {
+              /* store pages and other protected tabs can't be scripted */
+            })
+    )
+  );
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   await initializeSocialMediaSites();
   await initialize();
+  await injectIntoOpenTabs();
 
   // Configure side panel to open on action click
   if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
@@ -132,18 +160,16 @@ chrome.runtime.onConnect.addListener((port) => {
         break;
       }
 
-      case "PREVIEW_ALARM":
-        await playAlarm(
-          message.volume,
-          message.alarmSoundType,
-          message.customSoundDataUrl,
-          message.externalAudioUrl,
-          message.youtubeVideoId
-        );
+      case "PREVIEW_CUE":
+        await playCue({ ...message.request, preview: true });
         break;
 
-      case "STOP_ALARM":
-        await stopAlarm();
+      case "PREVIEW_SOURCE":
+        await previewSource(message.request);
+        break;
+
+      case "STOP_PREVIEW":
+        await stopCue();
         break;
 
       case "ADD_BLOCKED_SITES": {
@@ -234,7 +260,14 @@ chrome.runtime.onConnect.addListener((port) => {
 
       case "CLEAR_FOCUS_METRICS": {
         const freshMetrics = await clearFocusMetrics();
-        port.postMessage({ type: "FOCUS_METRICS_UPDATE", metrics: freshMetrics });
+        const stats = await clearFocusHistory();
+        broadcastMessage({ type: "FOCUS_METRICS_UPDATE", metrics: freshMetrics });
+        broadcastMessage({ type: "FOCUS_STATS_UPDATE", stats });
+        break;
+      }
+
+      case "GET_FOCUS_STATS": {
+        port.postMessage({ type: "FOCUS_STATS_UPDATE", stats: await getFocusStats() });
         break;
       }
 
@@ -254,8 +287,35 @@ chrome.runtime.onConnect.addListener((port) => {
   });
 });
 
+// Errors raised before the offscreen document exists are reported straight to the side panel.
+onSoundStatus(broadcastMessage);
+
 // Listen to messages from content scripts and other parts of the extension
 chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
+  // Sound status from the offscreen player is shown by the side panel directly;
+  // here we only remember a failed focus sound so the self-heal doesn't retry it every few seconds.
+  const report = message as OffscreenReport | undefined;
+  if (report?.target === "background") {
+    if (report.status.channel === "background" && report.status.state === "error") {
+      markFocusSoundFailed(report.status.playbackId);
+    }
+    return;
+  }
+
+  // Content script: a blocked site was shown during focus → count it (stats, XP, badges).
+  if ((message as { type?: string } | undefined)?.type === "BLOCKED_ATTEMPT") {
+    (async () => {
+      const settings = await getSettings();
+      const { stats, newBadges } = await recordBlockedAttempt(settings.dailyGoal);
+      const metrics = await getFocusMetrics();
+      metrics.blockedAttempts += 1;
+      await saveFocusMetrics(metrics);
+      broadcastMessage({ type: "FOCUS_METRICS_UPDATE", metrics });
+      broadcastMessage({ type: "FOCUS_STATS_UPDATE", stats, event: { kind: "blocked", newBadges } });
+    })().catch((error) => console.warn("Could not record blocked attempt:", error));
+    return;
+  }
+
   if (
     message &&
     typeof message === "object" &&

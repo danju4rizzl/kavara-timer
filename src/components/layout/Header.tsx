@@ -1,53 +1,50 @@
-import { ArrowLeft, Settings } from "lucide-react";
+import { ArrowLeft, MessageSquarePlus, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface HeaderProps {
-  onSettingsClick: () => void;
-  showBack: boolean;
+  /** Title shown when on a sub-page (Settings, Feedback). Omit on main views. */
+  subPageTitle?: string;
   onBackClick: () => void;
+  onSettingsClick: () => void;
+  onFeedbackClick: () => void;
 }
 
-export function Header({ onSettingsClick, showBack, onBackClick }: HeaderProps) {
+const iconButton =
+  "liquid flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/80" +
+  "shadow-[inset_0_1px_0_rgb(255_255_255/0.18)] hover:text-white cursor-pointer";
+
+export function Header({ subPageTitle, onBackClick, onSettingsClick, onFeedbackClick }: HeaderProps) {
+  const isSubPage = Boolean(subPageTitle);
+
   return (
-    <header className="flex items-center justify-between px-8 py-5 border-b border-white/10 bg-[#0b1326]/60 backdrop-blur-xl shrink-0">
-      <div className="flex items-center gap-3">
-        {showBack && (
-          <button
-            onClick={onBackClick}
-            className="p-2.5 rounded-xl hover:bg-white/10 border border-transparent hover:border-white/10 active:scale-95 transition-all duration-200 cursor-pointer"
-            aria-label="Go back"
-          >
-            <ArrowLeft className="w-5 h-5 text-white" />
+    <header className="glass-bar relative z-20 flex h-14 shrink-0 items-center justify-between gap-2 rounded-none border-x-0 border-t-0 px-4">
+      <div className="flex min-w-0 items-center gap-2">
+        {isSubPage && (
+          <button onClick={onBackClick} className={cn(iconButton, "-ml-1")} aria-label="Go back">
+            <ArrowLeft className="h-[18px] w-[18px]" />
           </button>
         )}
         <h1
+          key={subPageTitle ?? "home"}
           className={cn(
-            "text-headline-md font-bold tracking-tight select-none",
-            showBack
-              ? "text-white text-lg font-semibold"
-              : "bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(59,130,246,0.3)]"
+            "truncate font-bold tracking-tight select-none animate-fade-in",
+            isSubPage ? "text-[17px] text-white" : "gradient-text text-lg"
           )}
         >
-          {showBack ? "Settings" : "FocusFlow"}
+          {subPageTitle ?? "FocusFlow"}
         </h1>
       </div>
 
-      {!showBack && (
-        <button
-          onClick={onSettingsClick}
-          className="p-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 active:scale-95 transition-all duration-200 cursor-pointer"
-          aria-label="Open settings"
-        >
-          <Settings className="w-5 h-5" />
-        </button>
-      )}
-
-      {showBack && (
-        <div className="p-2.5 opacity-30">
-          <Settings className="w-5 h-5 text-slate-400" />
+      {!isSubPage && (
+        <div className="flex items-center gap-2">
+          <button onClick={onFeedbackClick} className={iconButton} aria-label="Send feedback" title="Send feedback">
+            <MessageSquarePlus className="h-[18px] w-[18px]" />
+          </button>
+          <button onClick={onSettingsClick} className={iconButton} aria-label="Open settings" title="Settings">
+            <Settings className="h-[18px] w-[18px]" />
+          </button>
         </div>
       )}
     </header>
   );
 }
-

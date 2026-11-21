@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { TimerState } from "@/types/timer";
-import type { PopupMessage, BackgroundMessage } from "@/types/messages";
+import type { PopupMessage, BackgroundMessage, OffscreenReport } from "@/types/messages";
 import { createInitialTimerState } from "@/types/timer";
 import { POPUP_PORT_NAME } from "@/types/messages";
 
@@ -53,6 +53,22 @@ export function useTimerConnection(): TimerConnection {
       setIsConnected(false);
       return null;
     }
+  }, []);
+
+  // Sound status comes straight from the offscreen player (runtime.sendMessage
+  // reaches every extension page). Relaying it through the service worker lost
+  // updates whenever Chrome had shut the idle worker down, leaving preview
+  // buttons stuck on "Stop".
+  useEffect(() => {
+    const onRuntimeMessage = (message: unknown) => {
+      const report = message as OffscreenReport | undefined;
+      if (report?.target !== "background" || report.type !== "SOUND_STATUS") return;
+      for (const handler of handlersRef.current) {
+        handler({ type: "SOUND_STATUS", status: report.status });
+      }
+    };
+    chrome.runtime.onMessage.addListener(onRuntimeMessage);
+    return () => chrome.runtime.onMessage.removeListener(onRuntimeMessage);
   }, []);
 
   useEffect(() => {

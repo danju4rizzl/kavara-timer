@@ -7,6 +7,8 @@ interface SettingsHook {
   settings: TimerSettings;
   draftSettings: TimerSettings;
   isDirty: boolean;
+  /** False until the saved settings have arrived from the service worker. */
+  loaded: boolean;
   updateDraft: (partial: Partial<TimerSettings>) => void;
   save: () => void;
   discard: () => void;
@@ -14,11 +16,12 @@ interface SettingsHook {
 
 export function useSettings(
   sendMessage: (message: PopupMessage) => void,
-  onPortMessage?: (handler: (message: BackgroundMessage) => void) => void
+  onPortMessage?: (handler: (message: BackgroundMessage) => void) => () => void
 ): SettingsHook {
   const [settings, setSettings] = useState<TimerSettings>(DEFAULT_SETTINGS);
   const [draftSettings, setDraftSettings] = useState<TimerSettings>(DEFAULT_SETTINGS);
   const [isDirty, setIsDirty] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -31,8 +34,9 @@ export function useSettings(
   useEffect(() => {
     if (!onPortMessage) return;
 
-    onPortMessage((message: BackgroundMessage) => {
+    return onPortMessage((message: BackgroundMessage) => {
       if (message.type === "SETTINGS_UPDATE") {
+        setLoaded(true);
         setSettings(message.settings);
         if (!isDirty) {
           setDraftSettings(message.settings);
@@ -60,5 +64,5 @@ export function useSettings(
     setIsDirty(false);
   }, [settings]);
 
-  return { settings, draftSettings, isDirty, updateDraft, save, discard };
+  return { settings, draftSettings, isDirty, loaded, updateDraft, save, discard };
 }

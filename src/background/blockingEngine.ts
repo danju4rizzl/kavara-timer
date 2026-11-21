@@ -1,16 +1,12 @@
-export async function enableBlocking(_domains: string[]): Promise<void> {
-  // Clearing network-level blocking rules as blocking is handled via content script overlay.
-  await disableBlocking();
-}
+/**
+ * Site blocking is enforced by the content script (src/content/content.ts),
+ * which shows a full-page overlay on blocked sites during focus sessions.
+ *
+ * These hooks are kept so the timer engine has a single place to call when a
+ * phase starts or stops. They intentionally do nothing at the network level.
+ * (declarativeNetRequestWithHostAccess is only used by offscreenManager.ts to
+ * fix YouTube embeds.)
+ */
+export async function enableBlocking(_domains: string[]): Promise<void> {}
 
-export async function disableBlocking(): Promise<void> {
-  const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
-  const existingRuleIds = existingRules.map((rule) => rule.id);
-
-  if (existingRuleIds.length > 0) {
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: existingRuleIds,
-      addRules: [],
-    });
-  }
-}
+export async function disableBlocking(): Promise<void> {}

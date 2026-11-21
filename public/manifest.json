@@ -1,16 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "FocusFlow — Pomodoro Block",
-  "description": "Optimize your focus with a powerful Pomodoro timer and distraction-free site blocking.",
-  "version": "1.0.0",
+  "name": "FocusFlow — Focus Timer & Site Blocker",
+  "short_name": "FocusFlow",
+  "description": "Stay in flow: a focus timer built on the Pomodoro technique, with site blocking, focus sounds and rewarding stats.",
+  "version": "1.1.0",
   "icons": {
     "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
   "action": {
     "default_icon": {
       "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
       "48": "icons/icon-48.png"
     },
     "default_title": "FocusFlow"
@@ -25,25 +28,21 @@
     "alarms",
     "notifications",
     "offscreen",
-    "declarativeNetRequest",
-    "sidePanel"
+    "scripting",
+    "sidePanel",
+    "declarativeNetRequestWithHostAccess"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "blocklist_rules",
-        "enabled": true,
-        "path": "rules.json"
-      }
-    ]
-  },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start"
     }
   ],
