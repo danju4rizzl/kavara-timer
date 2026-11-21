@@ -10,7 +10,7 @@ const PHASE_MESSAGES: Record<TimerPhase, { title: string; body: string }> = {
   },
   shortBreak: {
     title: "Break's Over! 💪",
-    body: "Ready to focus? Your next Pomodoro is starting.",
+    body: "Ready to focus? Your next focus session is starting.",
   },
   longBreak: {
     title: "Long Break Complete! 🚀",

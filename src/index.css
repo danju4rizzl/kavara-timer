@@ -1,176 +1,401 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
 
+/* =========================================================================
+ * Design tokens
+ * Accent colors are CSS variables so themes can swap them at runtime.
+ * Tailwind's opacity modifiers (bg-primary/10 …) use color-mix() on these
+ * variables, so every `*-primary` / `*-secondary` class follows the theme.
+ * ========================================================================= */
 @theme {
-  /* Lumina Color System */
   --color-surface: #0b1326;
-  --color-surface-dim: #060e20;
-  --color-surface-bright: #31394d;
-  --color-surface-container-low: #131b2e;
-  --color-surface-container: #171f33;
-  --color-surface-container-high: #222a3d;
-  --color-surface-container-highest: #2d3449;
-
-  --color-on-surface: #dae2fd;
+  --color-on-surface: #e6ebfb;
   --color-on-surface-variant: #c2c6d6;
-  --color-on-surface-muted: #94a3b8;
+  --color-on-surface-muted: #9aa6bd;
 
-  --color-primary: #3b82f6;
-  --color-primary-dim: #2563eb;
-  --color-secondary: #8b5cf6;
-  --color-secondary-dim: #7c3aed;
+  --color-primary: var(--accent-1);
+  --color-secondary: var(--accent-2);
+  --color-tertiary: var(--accent-3);
 
   --color-error: #ffb4ab;
   --color-error-container: #93000a;
-
   --color-outline: #8c909f;
   --color-outline-variant: #424754;
 
-  /* Glass tokens */
-  --color-glass-border: rgba(255, 255, 255, 0.08);
-  --color-glass-border-hover: rgba(255, 255, 255, 0.15);
-  --color-glass-highlight: rgba(255, 255, 255, 0.05);
-  --color-glass-inset: rgba(0, 0, 0, 0.25);
+  --color-glass-border: rgba(255, 255, 255, 0.12);
+  --color-glass-border-hover: rgba(255, 255, 255, 0.22);
 
-  /* Typography */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "SF Pro Text", sans-serif;
 
-  /* Border Radius */
   --radius-panel: 1.5rem;
-  --radius-card: 1rem;
-  --radius-button: 0.75rem;
+  --radius-card: 1.25rem;
+  --radius-button: 0.875rem;
   --radius-pill: 9999px;
 
-  /* Spacing */
   --spacing-panel: 20px;
   --spacing-stack: 12px;
+
+  /* Motion: iOS-like spring + smooth deceleration */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-fluid: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-view-in: view-in 420ms var(--ease-fluid) both;
+  --animate-pop-in: pop-in 380ms var(--ease-spring) both;
+  --animate-fade-in: fade-in 200ms ease-out both;
 }
 
-/* Base Styles */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* =========================================================================
+ * Color themes
+ * --accent-1/2/3   accent colors (primary / secondary / tertiary)
+ * --on-accent      text/icon color on accent gradients
+ * --bg-top/--bg-mid/--bg-bottom   app background gradient
+ * --blob-1/2/3     soft color fields floating behind the glass
+ * --phase-*        Focus / Short Break / Long Break colors
+ * ========================================================================= */
+:root,
+:root[data-theme="default"] {
+  --accent-1: #4f8cff;
+  --accent-2: #8b5cf6;
+  --accent-3: #22d3ee;
+  --on-accent: #ffffff;
+  --bg-top: #1c1b4d;
+  --bg-mid: #0d1430;
+  --bg-bottom: #050914;
+  --blob-1: #3b5bff;
+  --blob-2: #8b5cf6;
+  --blob-3: #06b6d4;
+  --phase-focus-a: #3b82f6;
+  --phase-focus-b: #8b5cf6;
+  --phase-short-a: #10b981;
+  --phase-short-b: #06b6d4;
+  --phase-long-a: #a855f7;
+  --phase-long-b: #ec4899;
 }
 
-html {
-  font-family: var(--font-sans);
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow: hidden;
+:root[data-theme="raspberries"] {
+  --accent-1: #f43f7f;
+  --accent-2: #c026d3;
+  --accent-3: #fb7185;
+  --on-accent: #ffffff;
+  --bg-top: #3b0a26;
+  --bg-mid: #1c0716;
+  --bg-bottom: #0b030a;
+  --blob-1: #e11d74;
+  --blob-2: #a21caf;
+  --blob-3: #fb7185;
+  --phase-focus-a: #e11d74;
+  --phase-focus-b: #c026d3;
+  --phase-short-a: #fb7185;
+  --phase-short-b: #f59e0b;
+  --phase-long-a: #9333ea;
+  --phase-long-b: #e11d74;
 }
 
-body {
-  background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #060c18 100%);
-  color: var(--color-on-surface);
-  line-height: 1.5;
-  overflow: hidden;
+/* Eko-Ile: Lagos danfo yellow, sunset orange and lagoon teal */
+:root[data-theme="eko-ile"] {
+  --accent-1: #fbbf24;
+  --accent-2: #f97316;
+  --accent-3: #14b8a6;
+  --on-accent: #1d1302;
+  --bg-top: #2b2108;
+  --bg-mid: #12100a;
+  --bg-bottom: #070604;
+  --blob-1: #f5b400;
+  --blob-2: #f97316;
+  --blob-3: #0d9488;
+  --phase-focus-a: #f59e0b;
+  --phase-focus-b: #ea580c;
+  --phase-short-a: #0d9488;
+  --phase-short-b: #15803d;
+  --phase-long-a: #ea580c;
+  --phase-long-b: #be123c;
 }
 
-/* Scrollbar Styling */
+:root[data-theme="aurora"] {
+  --accent-1: #34d399;
+  --accent-2: #22d3ee;
+  --accent-3: #a78bfa;
+  --on-accent: #032018;
+  --bg-top: #06302e;
+  --bg-mid: #061a22;
+  --bg-bottom: #030a0f;
+  --blob-1: #10b981;
+  --blob-2: #0ea5e9;
+  --blob-3: #8b5cf6;
+  --phase-focus-a: #059669;
+  --phase-focus-b: #0891b2;
+  --phase-short-a: #65a30d;
+  --phase-short-b: #059669;
+  --phase-long-a: #6366f1;
+  --phase-long-b: #0891b2;
+}
+
+:root[data-theme="ember"] {
+  --accent-1: #fb7149;
+  --accent-2: #ef4444;
+  --accent-3: #fbbf24;
+  --on-accent: #ffffff;
+  --bg-top: #3a1208;
+  --bg-mid: #1a0a07;
+  --bg-bottom: #0a0403;
+  --blob-1: #f97316;
+  --blob-2: #dc2626;
+  --blob-3: #f59e0b;
+  --phase-focus-a: #fb7149;
+  --phase-focus-b: #ef4444;
+  --phase-short-a: #d97706;
+  --phase-short-b: #ea580c;
+  --phase-long-a: #e11d48;
+  --phase-long-b: #9333ea;
+}
+
+:root[data-theme="graphite"] {
+  --accent-1: #e4e4e7;
+  --accent-2: #a1a1aa;
+  --accent-3: #d4d4d8;
+  --on-accent: #0b0b0d;
+  --bg-top: #26272b;
+  --bg-mid: #121215;
+  --bg-bottom: #060607;
+  --blob-1: #71717a;
+  --blob-2: #3f3f46;
+  --blob-3: #a1a1aa;
+  --phase-focus-a: #a1a1aa;
+  --phase-focus-b: #52525b;
+  --phase-short-a: #71717a;
+  --phase-short-b: #3f3f46;
+  --phase-long-a: #52525b;
+  --phase-long-b: #27272a;
+}
+
+/* =========================================================================
+ * Base
+ * ========================================================================= */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: radial-gradient(120% 70% at 50% 0%, var(--bg-top) 0%, var(--bg-mid) 55%, var(--bg-bottom) 100%);
+    background-color: var(--bg-bottom);
+    color: var(--color-on-surface);
+    line-height: 1.5;
+    overflow: hidden;
+    transition: background-color 600ms var(--ease-fluid);
+  }
+
+  /* Every pressable thing springs back like iOS controls. */
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="radio"],
+  [role="switch"],
+  summary {
+    transition-property: transform, scale, background-color, border-color, color, box-shadow, opacity;
+    transition-duration: 450ms;
+    transition-timing-function: var(--ease-spring);
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  button:not(:disabled):active,
+  [role="button"]:active,
+  [role="tab"]:active,
+  [role="radio"]:active {
+    transform: scale(0.95);
+    transition-duration: 120ms;
+    transition-timing-function: ease-out;
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--accent-1) 70%, white);
+    outline-offset: 2px;
+  }
+
+  input[type="range"] {
+    accent-color: var(--accent-1);
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--accent-1) 45%, transparent);
+  }
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: var(--color-outline-variant);
+  background: rgba(255, 255, 255, 0.14);
   border-radius: var(--radius-pill);
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-outline);
+  background: rgba(255, 255, 255, 0.28);
 }
 
-/* Glass Utility Layers */
+/* =========================================================================
+ * Liquid glass materials
+ * Layers: tinted translucent fill → heavy backdrop blur + saturation →
+ * hairline border → bright top "specular" edge → soft drop shadow.
+ * ========================================================================= */
+
+/* Cards and panels */
 @utility glass-panel {
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  position: relative;
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 0.11) 0%, rgb(255 255 255 / 0.04) 45%, rgb(255 255 255 / 0.065) 100%);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--color-glass-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
-  transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 -1px 0 rgb(255 255 255 / 0.04),
+    0 12px 32px -12px rgb(0 0 0 / 0.6);
 }
 
-@utility glass-panel-interactive {
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--color-glass-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+/* Interactive glass: lifts on hover and catches a highlight that follows the pointer (see liquid.ts). */
+@utility liquid {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
 
-  &:hover {
-    background: rgba(15, 23, 42, 0.55);
-    border-color: var(--color-glass-border-hover);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
-    transform: translateY(-1px);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0;
+    background: radial-gradient(
+      140px circle at var(--mx, 50%) var(--my, 50%),
+      rgb(255 255 255 / 0.2),
+      color-mix(in oklab, var(--accent-1) 14%, transparent) 40%,
+      transparent 70%
+    );
+    transition: opacity 350ms var(--ease-fluid);
+  }
+
+  @media (hover: hover) {
+    &:hover::after {
+      opacity: 1;
+    }
+    &:hover {
+      border-color: var(--color-glass-border-hover);
+    }
+  }
+
+  &:active::after {
+    opacity: 1;
+    background: radial-gradient(
+      220px circle at var(--mx, 50%) var(--my, 50%),
+      rgb(255 255 255 / 0.28),
+      color-mix(in oklab, var(--accent-1) 18%, transparent) 45%,
+      transparent 75%
+    );
   }
 }
 
-@utility glass-popover {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid var(--color-glass-border-hover);
-  box-shadow: 0 10px 38px 0 rgba(0, 0, 0, 0.4);
+/* Kept for older markup */
+@utility glass-panel-interactive {
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.11), rgb(255 255 255 / 0.05));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--color-glass-border);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 12px 32px -12px rgb(0 0 0 / 0.6);
 }
 
+/* Bars (header, tab bar, sticky action bar) */
+@utility glass-bar {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.04));
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 16px 40px -16px rgb(0 0 0 / 0.75);
+}
+
+/* Floating sheets: dialogs, toasts */
+@utility glass-popover {
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.07));
+  backdrop-filter: blur(36px) saturate(200%);
+  -webkit-backdrop-filter: blur(36px) saturate(200%);
+  border: 1px solid rgb(255 255 255 / 0.18);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 24px 60px -12px rgb(0 0 0 / 0.7);
+}
+
+/* Recessed wells: inputs, steppers, the off-state of toggles */
 @utility glass-inset {
-  background: var(--color-glass-inset);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 2px 8px 0 rgba(0, 0, 0, 0.3);
-  transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgb(0 0 0 / 0.24);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.35), inset 0 -1px 0 rgb(255 255 255 / 0.04);
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
 }
 
 @utility glass-highlight {
-  background: var(--color-glass-highlight);
+  background: rgb(255 255 255 / 0.06);
 }
 
+/* Accent fill (primary buttons, active pills). Text color adapts to the theme. */
 @utility gradient-primary {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  color: var(--on-accent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    inset 0 -1px 0 rgb(0 0 0 / 0.12),
+    0 6px 20px -6px color-mix(in oklab, var(--accent-1) 70%, transparent);
 }
 
 @utility gradient-text {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background: linear-gradient(120deg, var(--accent-1), var(--accent-3) 55%, var(--accent-2));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+@utility text-on-accent {
+  color: var(--on-accent);
+}
+
+/* Typography */
 @utility text-headline-lg {
   font-size: 24px;
   font-weight: 700;
   line-height: 32px;
   letter-spacing: -0.02em;
 }
-
 @utility text-headline-md {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 650;
   line-height: 28px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
-
 @utility text-body-lg {
   font-size: 16px;
   font-weight: 400;
   line-height: 24px;
 }
-
 @utility text-body-md {
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
 }
-
 @utility text-label-bold {
   font-size: 12px;
   font-weight: 600;
@@ -178,18 +403,134 @@ body {
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
-
 @utility text-label-sm {
   font-size: 11px;
   font-weight: 500;
   line-height: 14px;
 }
 
-/* Glowing utilities */
 @utility text-glow {
-  text-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+  text-shadow: 0 0 12px color-mix(in oklab, var(--accent-1) 45%, transparent);
 }
 
 @utility timer-glow {
-  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.25)) drop-shadow(0 0 8px rgba(139, 92, 246, 0.2));
+  filter: drop-shadow(0 0 18px color-mix(in oklab, var(--accent-1) 30%, transparent))
+    drop-shadow(0 0 8px color-mix(in oklab, var(--accent-2) 22%, transparent));
+}
+
+/* =========================================================================
+ * Motion
+ * ========================================================================= */
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Background color fields drift slowly behind the glass. */
+@keyframes drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(18%, 12%) scale(1.15);
+  }
+}
+@keyframes drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1.1);
+  }
+  50% {
+    transform: translate(-20%, -8%) scale(0.95);
+  }
+}
+@keyframes drift-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(0.9);
+  }
+  50% {
+    transform: translate(10%, -16%) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Denser glass for bars that float over scrolling text (e.g. the Settings Save bar), so text behind stays unreadable. */
+@utility glass-bar-dense {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--bg-mid) 93%, white),
+    color-mix(in oklab, var(--bg-bottom) 96%, white)
+  );
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 -12px 30px -12px rgb(0 0 0 / 0.6);
+}
+
+/* Chart bar color per theme (validated ≥3:1 against the dark chart surface). */
+:root,
+:root[data-theme="default"] { --chart-bar: #4f8cff; }
+:root[data-theme="raspberries"] { --chart-bar: #f43f7f; }
+:root[data-theme="eko-ile"] { --chart-bar: #f5b400; }
+:root[data-theme="aurora"] { --chart-bar: #14a877; }
+:root[data-theme="ember"] { --chart-bar: #f05a2e; }
+:root[data-theme="graphite"] { --chart-bar: #d4d4d8; }
+
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+/* Celebration confetti */
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--dx), 105vh, 0) rotate(var(--rot)); opacity: 0.9; }
+}
+@keyframes badge-pop {
+  0% { transform: scale(0.3) rotate(-25deg); opacity: 0; }
+  60% { transform: scale(1.15) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes shine-sweep {
+  from { transform: translateX(-120%) skewX(-20deg); }
+  to { transform: translateX(220%) skewX(-20deg); }
 }

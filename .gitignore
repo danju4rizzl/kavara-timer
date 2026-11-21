@@ -16,3 +16,7 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Store packages
+release/
+_to_delete/

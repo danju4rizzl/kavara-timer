@@ -26,7 +26,7 @@ export function BlockedSiteCard({ site, onToggle, onRemove, isReadOnly = false }
   return (
     <div
       className={cn(
-        "flex items-center gap-3 px-4 py-3 bg-[#0b1326]/35 border rounded-xl group transition-all duration-200",
+        "flex items-center gap-3 px-4 py-3 bg-white/[0.05] border rounded-xl group transition-all duration-200",
         isActive
           ? "border-white/5 hover:bg-white/5 hover:border-white/10"
           : "border-dashed border-white/5 opacity-55 hover:bg-white/5"
@@ -37,13 +37,13 @@ export function BlockedSiteCard({ site, onToggle, onRemove, isReadOnly = false }
           "w-9 h-9 rounded-lg flex items-center justify-center border transition-colors duration-200",
           isActive
             ? "bg-primary/10 border-primary/15"
-            : "bg-slate-900 border-white/5"
+            : "bg-white/[0.08] border-white/5"
         )}
       >
         <IconComponent
           className={cn(
             "w-4.5 h-4.5 transition-all duration-200",
-            isActive ? "text-primary drop-shadow-[0_0_6px_rgba(59,130,246,0.3)]" : "text-on-surface-muted/40"
+            isActive ? "text-primary drop-shadow-[0_0_6px_color-mix(in_oklab,var(--accent-1)_30%,transparent)]" : "text-on-surface-muted/40"
           )}
           strokeWidth={1.8}
         />
@@ -66,10 +66,14 @@ export function BlockedSiteCard({ site, onToggle, onRemove, isReadOnly = false }
           {/* Toggle Switch */}
           {onToggle && (
             <button
-              onClick={() => onToggle(site.id)}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggle(site.id || site.domain);
+              }}
               className={cn(
                 "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                isActive ? "bg-primary" : "bg-slate-800"
+                isActive ? "bg-primary" : "bg-white/[0.1]"
               )}
               role="switch"
               aria-checked={isActive}
@@ -86,11 +90,15 @@ export function BlockedSiteCard({ site, onToggle, onRemove, isReadOnly = false }
           {/* Delete button */}
           {onRemove && (
             <button
-              onClick={() => onRemove(site.id)}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRemove(site.id || site.domain);
+              }}
               className="p-1.5 rounded-lg text-on-surface-muted/60 hover:text-error hover:bg-error/10 active:scale-90 transition-all duration-200 opacity-70 group-hover:opacity-100 cursor-pointer"
               aria-label={`Remove ${site.domain}`}
             >
-              <Trash2 className="w-4 h-4" strokeWidth={1.8} />
+              <Trash2 className="w-4 h-4 pointer-events-none" strokeWidth={1.8} />
             </button>
           )}
         </div>

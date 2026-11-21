@@ -35,8 +35,10 @@ export function TimerDial({ timerState }: TimerDialProps) {
       <div className="absolute w-[240px] h-[240px] rounded-full bg-gradient-to-tr from-primary/10 to-secondary/10 blur-3xl pointer-events-none -z-10 animate-pulse duration-[6000ms]" />
 
       <div className="relative flex items-center justify-center">
-        {/* Soft glass plate replacing the square card box */}
-        <div className="absolute w-[234px] h-[234px] rounded-full bg-[#0b1326]/30 backdrop-blur-sm border border-white/5 shadow-[0_12px_40px_rgba(0,0,0,0.4)] -z-10" />
+        {/* Liquid glass disc with a specular rim */}
+        <div className="glass-panel absolute -z-10 h-[238px] w-[238px] rounded-full">
+          <div className="absolute inset-0 rounded-full bg-[radial-gradient(120%_80%_at_50%_0%,rgb(255_255_255/0.16),transparent_55%)]" />
+        </div>
 
         <svg
           width={radius * 2}
@@ -46,8 +48,9 @@ export function TimerDial({ timerState }: TimerDialProps) {
         >
           <defs>
             <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#3b82f6" />
-              <stop offset="100%" stopColor="#8b5cf6" />
+              <stop offset="0%" style={{ stopColor: "var(--accent-1)" }} />
+              <stop offset="55%" style={{ stopColor: "var(--accent-3)" }} />
+              <stop offset="100%" style={{ stopColor: "var(--accent-2)" }} />
             </linearGradient>
           </defs>
 
@@ -57,7 +60,7 @@ export function TimerDial({ timerState }: TimerDialProps) {
             cy={radius}
             r={normalizedRadius}
             fill="none"
-            stroke="rgba(255, 255, 255, 0.04)"
+            stroke="rgba(255, 255, 255, 0.08)"
             strokeWidth={strokeWidth}
           />
 
@@ -73,7 +76,7 @@ export function TimerDial({ timerState }: TimerDialProps) {
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             transform={`rotate(-90 ${radius} ${radius})`}
-            className="transition-[stroke-dashoffset] duration-500 ease-linear"
+            className="transition-[stroke-dashoffset] duration-700 [transition-timing-function:var(--ease-fluid)]"
           />
 
           {/* Inner dark circle */}
@@ -81,8 +84,8 @@ export function TimerDial({ timerState }: TimerDialProps) {
             cx={radius}
             cy={radius}
             r={normalizedRadius - 14}
-            fill="rgba(6, 12, 24, 0.5)"
-            stroke="rgba(255, 255, 255, 0.03)"
+            fill="rgba(0, 0, 0, 0.2)"
+            stroke="rgba(255, 255, 255, 0.07)"
             strokeWidth={1}
           />
 
@@ -127,7 +130,7 @@ export function TimerDial({ timerState }: TimerDialProps) {
 
         {/* Pulse animation when running */}
         {status === "running" && (
-          <div className="absolute w-[220px] h-[220px] rounded-full border border-primary/20 animate-ping opacity-20 pointer-events-none duration-1000" />
+          <div className="pointer-events-none absolute h-[252px] w-[252px] rounded-full border border-primary/30 opacity-70 motion-safe:animate-pulse" />
         )}
       </div>
     </div>
