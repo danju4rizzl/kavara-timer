@@ -5,6 +5,10 @@ timer built on the **Pomodoro technique** (focus sessions separated by short and
 blocker that keeps distracting sites closed while you focus, plus gamified stats that reward consistency. It runs in the
 browser's **side panel** (toolbar icon, or `Ctrl+Shift+F` / `⌘+Shift+F`).
 
+
+<img width="1280" height="800" alt="THE PROD" src="https://github.com/user-attachments/assets/8ce9e284-436c-4bb6-9e13-7de0641402c9" />
+
+
 ---
 
 ## Contents
